@@ -621,7 +621,7 @@ if(!G.an)G.an={c:G.chickens||0,s:G.sheep||0,d:0,p:0,w:0};
 var RESTORING=false;
 function save(){if(RESTORING)return;try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){}try{cloudQueue()}catch(e){}}
 /* ---------- TRX ile çiftçi alma ---------- */
-var PAYKEY='ciftlik-vadisi-pay',PAY_ADDR='TUYzDrvM5idScQor3b2y8EfSbMFCb8ofCf',PAY_AMT=3,MAXF=4,PUBJ={"kty":"EC","crv":"P-256","x":"Ey96kmn5Ft-byDn9SLaQJYfIUbRvpCfNoAVn-Cx0E4A","y":"HtgEOmfxh8uJ5rzvGq4csn6IsFiO-4czrlbjr9I9n6M"};
+var PAYKEY='ciftlik-vadisi-pay',PAY_ADDR='TUYzDrvM5idScQor3b2y8EfSbMFCb8ofCf',PAY_AMT=3,MAXF=4,STAR_AMT=100,PUBJ={"kty":"EC","crv":"P-256","x":"Ey96kmn5Ft-byDn9SLaQJYfIUbRvpCfNoAVn-Cx0E4A","y":"HtgEOmfxh8uJ5rzvGq4csn6IsFiO-4czrlbjr9I9n6M"};
 var PAY=null;
 try{PAY=JSON.parse(localStorage.getItem(PAYKEY)||'null')}catch(e){PAY=null}
 if(!PAY||!PAY.pid||!PAY.paid)PAY={pid:'',paid:[]};
@@ -1959,7 +1959,7 @@ function refreshUI(){
   $('vCash').textContent=fmtN(G.cash);$('vCoin').textContent=fmtN(G.coins);
   $('vStock').textContent=fmtN(G.wheat);$('vStockBar').style.width=Math.min(100,G.wheat/capacity()*100)+'%';
   $('vFarmers').textContent=G.farmers;$('vRate').textContent=Math.round(G._rate||0)+' / dk';
-  var maxF=G.farmers>=MAXF;$('vHire').textContent=maxF?'Dolu':PAY_AMT+' TRX';
+  var maxF=G.farmers>=MAXF;$('vHire').textContent=maxF?'Dolu':STAR_AMT+' ⭐';
   var sellOff=truck.state!=='park'||G.wheat<1;$('bSell').classList.toggle('off',sellOff);
   ANI.forEach(function(d){
     var n=cnt(d.k),t=$('t_'+d.k),p=$('p_'+d.k),b=$('b_'+d.k),cs=aCost(d);
@@ -2029,7 +2029,7 @@ function renderModal(){
     ups.forEach(function(u){var lv=G.up[u.k],c=cost(u.b,u.m,lv),mx=lv>=u.max;
       h+='<div class="item"><div class="ic"><span class="ico" style="width:30px;height:30px" data-i="'+u.ic+'"></span></div><div class="tx"><b>'+u.name+' <span style="font-size:13px;color:#8a5a2a">Sv.'+(lv+1)+'</span></b><small>'+(mx?'En yüksek seviye':u.d)+'</small></div>'+
         (mx?'<button class="btn gold off" disabled>Dolu</button>':'<button class="btn '+(G.cash>=c?'gold':'gold off')+'" data-up="'+u.k+'">'+cashTag(c)+'</button>')+'</div>'});
-    h+='<div class="note">Yeni çiftçi için tarla yanındaki küreğe dokun (3 TRX). Altınla hayvan alınır.</div>';
+    h+='<div class="note">Yeni çiftçi için tarla yanındaki küreğe dokun ('+STAR_AMT+' ⭐ Telegram Yıldızı). Altınla hayvan alınır.</div>';
   }else if(n==='farm'){
     h=head('Çiftlik');
     h+='<div class="item"><div class="ic"><span class="ico" style="width:30px;height:30px" data-i="shovel"></span></div><div class="tx"><b>Çiftçiler: '+G.farmers+'/'+MAXF+'</b><small>İlk çiftçinin görünümü</small></div></div>';
@@ -2038,15 +2038,17 @@ function renderModal(){
     h+='<div class="note">Diğer çiftçiler sırayla kadın ve erkek olarak katılır.</div>';
   }else if(n==='hire'){
     h=head('Çiftçi Al');
-    h+='<div class="item"><div class="ic"><span class="ico" style="width:30px;height:30px" data-i="shovel"></span></div><div class="tx"><b>Çiftçiler: '+G.farmers+'/'+MAXF+'</b><small>Her ek çiftçi '+PAY_AMT+' TRX (TRON ağı)</small></div></div>';
+    h+='<div class="item"><div class="ic"><span class="ico" style="width:30px;height:30px" data-i="shovel"></span></div><div class="tx"><b>Çiftçiler: '+G.farmers+'/'+MAXF+'</b><small>Her ek çiftçi '+STAR_AMT+' ⭐ (Telegram Yıldızı)</small></div></div>';
     if(G.farmers>=MAXF){h+='<div class="note" style="font-size:16px;padding:8px 4px">Tarla dolu: en fazla '+MAXF+' çiftçi çalışabilir.</div>'}
     else{
-      h+='<div><div class="hlb">1. Hesap kimliğin</div><div class="row"><input class="fld" id="hId" readonly value="'+PAY.pid+'"><button class="btn gold" data-copy="hId" style="height:38px;font-size:15px">Kopyala</button></div></div>';
-      h+='<div><div class="hlb">2. '+PAY_AMT+' TRX gönder (yalnızca TRON ağı, yerel TRX)</div><div class="row"><input class="fld" id="hAd" style="font-size:12px" readonly value="'+PAY_ADDR+'"><button class="btn gold" data-copy="hAd" style="height:38px;font-size:15px">Kopyala</button></div><div id="qr" style="margin:8px auto 0;width:116px;min-height:0;background:#fff;padding:5px;border-radius:8px;display:none"></div></div>';
-      h+='<div><div class="hlb">3. İşlem numarasını (TXID) yapıştır, bildirimi kopyala</div><div class="row"><input class="fld" id="hTx" placeholder="İşlem numarası" autocomplete="off" spellcheck="false"><button class="btn blue" data-notify="1" style="height:38px;font-size:15px">Bildirimi kopyala</button></div></div>';
-      h+='<div><div class="hlb">4. Sana gelen kodu yapıştır</div><div class="row"><input class="fld" id="hCode" placeholder="Çiftçi kodu" autocomplete="off" spellcheck="false"><button class="btn gold" data-redeem="1" style="height:38px;font-size:15px">Uygula</button></div></div>';
-      h+='<div class="hst" id="hSt" style="color:#f6e3b8"></div>';
-      h+='<div class="note">Kod yalnızca bu hesap kimliği için geçerlidir. Çiftçin, ödemen kontrol edilip kodun gönderildikten sonra işe başlar.</div>';
+      if(TGW&&TGW.openInvoice){
+        h+='<button class="btn gold" data-star="buy" style="height:48px;font-size:20px">⭐ '+STAR_AMT+' Yıldız ile satın al</button>';
+        h+='<div class="hst" id="hSt" style="color:#f6e3b8"></div>';
+        h+='<button class="btn blue" data-star="check" style="height:40px;font-size:16px">Ödememi kontrol et</button>';
+        h+='<div class="note">Ödeme Telegram üzerinden güvenle yapılır. Ödeme alınınca çiftçin hemen işe başlar. Yıldızların ödendi ama çiftçi gelmediyse "Ödememi kontrol et"e dokun.</div>';
+      }else{
+        h+='<div class="note" style="font-size:16px;padding:8px 4px">Çiftçi satın alma yalnızca Telegram içinde, Yıldız ile yapılır. Oyunu botun bağlantısından aç.</div>';
+      }
     }
   }else if(n==='quests'){
     h=head('Görevler');
@@ -2072,6 +2074,34 @@ function renderModal(){
   }
   p.innerHTML=h;injectIcons(p);
   if(n==='hire'){try{var qe=$('qr');if(qe&&window.QRCode){qe.innerHTML='';new QRCode(qe,{text:PAY_ADDR,width:106,height:106,colorDark:'#2a1608',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});qe.style.display='block'}}catch(e){}}
+}
+var starBusy=false;
+function starPost(path,body){return fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return{status:r.status,j:j}})})}
+function starApply(charges){
+  var have={},add=0;PAY.paid.forEach(function(x){have[x.c]=1});
+  (charges||[]).forEach(function(id){var c='star:'+id;if(!have[c]&&PAY.paid.length<MAXF-1){PAY.paid.push({s:PAY.paid.length+1,c:c});have[c]=1;add++}});
+  if(add){savePay();G.farmers=Math.min(MAXF,Math.max(G.farmers,1+PAY.paid.length));syncFarmers();save();SND.buy();
+    var f=farmers[farmers.length-1];if(f)burst(f.x,f.y-14,18,['#ffe27a','#fff','#a6f070'],70);
+    toast(add>1?add+' yeni çiftçi işe başladı!':'Yeni çiftçi işe başladı!');refreshUI();if(modalOpen==='hire')renderModal()}
+  return add;
+}
+function starSync(){
+  if(!TGW||!TGW.initData)return Promise.resolve(0);
+  return starPost('/api/status',{initData:TGW.initData}).then(function(r){return r.status===200?starApply(r.j.charges):0}).catch(function(){return 0});
+}
+function starBuy(){
+  if(starBusy)return;starBusy=true;hMsg('Ödeme ekranı hazırlanıyor...',true);
+  function done(){starBusy=false}
+  starPost('/api/invoice',{initData:TGW.initData}).then(function(r){
+    if(r.status===409){done();hMsg('Tüm çiftçiler zaten alındı.',false);starSync();return}
+    if(r.status!==200||!r.j.link){done();hMsg('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.',false);SND.err();return}
+    TGW.openInvoice(r.j.link,function(st){
+      if(st==='paid'){
+        hMsg('Ödeme alındı, çiftçin geliyor...',true);var n=0;
+        (function poll(){starSync().then(function(a){if(a||++n>=10){done();if(!a)hMsg('Ödeme alındı ama çiftçi henüz görünmedi. Birazdan "Ödememi kontrol et"e dokun.',false)}else setTimeout(poll,1500)})})();
+      }else{done();hMsg(st==='cancelled'?'Ödeme iptal edildi.':st==='failed'?'Ödeme başarısız oldu.':'Ödeme bekleniyor...',st==='pending')}
+    });
+  }).catch(function(){done();hMsg('Bağlantı hatası. İnternetini kontrol et.',false)});
 }
 function hMsg(m,ok){var e=$('hSt');if(e){e.textContent=m;e.style.color=ok?'#a6f070':'#ffd0a0'}}
 function hCopy(inp,text){
@@ -2122,6 +2152,8 @@ $('panel').addEventListener('click',function(ev){
   if(t.dataset.copy){var inp=$(t.dataset.copy);hCopy(inp,inp.value);return}
   if(t.dataset.notify){var tx=($('hTx').value||'').trim();hCopy(null,'Çiftlik Vadisi ödeme | Kimlik: '+PAY.pid+' | Tutar: '+PAY_AMT+' TRX | Adres: '+PAY_ADDR+(tx?' | TXID: '+tx:''));return}
   if(t.dataset.redeem){redeemCode($('hCode').value);return}
+  if(t.dataset.star==='buy'){starBuy();return}
+  if(t.dataset.star==='check'){hMsg('Kontrol ediliyor...',true);starSync().then(function(a){if(!a)hMsg('Yeni ödeme bulunamadı.',false)});return}
   if(t.dataset.snd){G.sound=!G.sound;save();renderModal();return}
   if(t.dataset.mus){G.music=!wantMusic();if(G.music)startMusic();else stopMusic();save();renderModal();return}
   if(t.dataset.reset){if(!resetArm){resetArm=true;renderModal();setTimeout(function(){resetArm=false;if(modalOpen==='settings')renderModal()},4000);return}
@@ -2168,7 +2200,7 @@ var rsT=0,lastW=0;
 window.addEventListener('resize',function(){clearTimeout(rsT);rsT=setTimeout(function(){var w=$('wrap').clientWidth;if(Math.abs(w-lastW)>2){lastW=w;rebuild()}},200)});
 
 function init(){
-  if(TGW){try{TGW.ready();TGW.expand();try{TGW.disableVerticalSwipes()}catch(e){}try{TGW.setHeaderColor('#1d3a1a');TGW.setBackgroundColor('#1d3a1a')}catch(e){}$('bFull').style.display='none'}catch(e){}}
+  if(TGW){try{TGW.ready();TGW.expand();try{TGW.disableVerticalSwipes()}catch(e){}try{TGW.setHeaderColor('#1d3a1a');TGW.setBackgroundColor('#1d3a1a')}catch(e){}$('bFull').style.display='none'}catch(e){}starSync()}
   injectIcons();
   lastW=$('wrap').clientWidth;rebuild();
   syncFarmers();syncAnimals();

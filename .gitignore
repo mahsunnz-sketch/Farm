@@ -1,0 +1,4 @@
+node_modules
+.netlify
+private_key.json
+*.key
