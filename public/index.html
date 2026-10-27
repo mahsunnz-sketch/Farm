@@ -611,7 +611,7 @@ function buildBG(){
 var KEY='ciftlik-vadisi-v1';
 function fresh(){
   var p=[];for(var i=0;i<24;i++)p.push(i%5===0?1:(i<15?.12+((i*37)%83)/100:-1));
-  return{v:1,cash:212,coins:198,wheat:120,farmers:1,gender:'f',up:{yield:0,speed:0,price:0,cap:0},an:{c:0,s:0,d:0,p:0,w:0},plots:p,st:{harv:0,sold:0,eggs:0,wool:0},q:{},sound:true,seen:false};
+  return{v:1,cash:0,coins:0,wheat:120,farmers:1,gender:'f',up:{yield:0,speed:0,price:0,cap:0},an:{c:0,s:0,d:0,p:0,w:0},plots:p,st:{harv:0,sold:0,eggs:0,wool:0},q:{},sound:true,seen:false};
 }
 var G,HAD=false;
 try{var raw=localStorage.getItem(KEY);HAD=!!raw;G=raw?JSON.parse(raw):null}catch(e){G=null}
