@@ -1,4 +1,4 @@
-import { json, verifyInitData, tgApi, listPaid, listUnlocks, price, MAX_EXTRA, UNLOCK_ITEMS } from "../../src/lib/tg.js";
+import { json, verifyInitData, tgApi, listPaid, listUnlocks, price, unlockPrice, MAX_EXTRA, UNLOCK_ITEMS } from "../../src/lib/tg.js";
 
 export async function onRequest({ request, env }) {
   if (request.method !== "POST") return json({ error: "method" }, 405);
@@ -9,7 +9,7 @@ export async function onRequest({ request, env }) {
   if (!user) return json({ error: "unauthorized" }, 401);
 
   const item = body.item || "farmer";
-  let title, description, payload;
+  let title, description, payload, amount = price(env);
   if (item === "farmer") {
     const paid = await listPaid(env, user.id);
     if (paid.length >= MAX_EXTRA) return json({ error: "full", count: paid.length }, 409);
@@ -22,6 +22,7 @@ export async function onRequest({ request, env }) {
     title = `${UNLOCK_ITEMS[item]} kilidi`;
     description = `Çiftlik Vadisi: ${UNLOCK_ITEMS[item]} satın alma hakkı`;
     payload = `unlock:${item}:${user.id}`;
+    amount = unlockPrice(item);
   } else {
     return json({ error: "bad_item" }, 400);
   }
@@ -32,7 +33,7 @@ export async function onRequest({ request, env }) {
     payload,
     provider_token: "",
     currency: "XTR",
-    prices: [{ label: title, amount: price(env) }],
+    prices: [{ label: title, amount }],
   });
   if (!r || !r.ok) return json({ error: "telegram", detail: r && r.description }, 502);
   return json({ link: r.result });

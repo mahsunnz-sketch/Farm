@@ -1,9 +1,9 @@
 import {
-  json, tgApi, listPaid, listUnlocks, recordPaid, recordUnlock, price, safeEqual,
+  json, tgApi, listPaid, listUnlocks, recordPaid, recordUnlock, price, unlockPrice, safeEqual,
   MAX_EXTRA, UNLOCK_ITEMS,
 } from "../../src/lib/tg.js";
 
-// Faturadaki payload'ı çözer: farmer:<uid>  veya  unlock:<s|w>:<uid>
+// Faturadaki payload'ı çözer: farmer:<uid>  veya  unlock:<s|w|z|e|o|t>:<uid>
 function parsePayload(s) {
   let m = /^farmer:(\d+)$/.exec(s || "");
   if (m) return { kind: "farmer", uid: m[1] };
@@ -21,13 +21,13 @@ export async function onRequest({ request, env }) {
   }
   let u;
   try { u = await request.json(); } catch { return json({ ok: true }); }
-  const amount = price(env);
+  const expect = (pl) => (pl && pl.kind === "unlock" ? unlockPrice(pl.item) : price(env));
 
   // 1) Ödeme öncesi onay (10 saniye içinde cevaplanmalı)
   if (u.pre_checkout_query) {
     const q = u.pre_checkout_query;
     const pl = parsePayload(q.invoice_payload);
-    let ok = !!pl && String(q.from && q.from.id) === pl.uid && q.currency === "XTR" && q.total_amount === amount;
+    let ok = !!pl && String(q.from && q.from.id) === pl.uid && q.currency === "XTR" && q.total_amount === expect(pl);
     let msg = "Ödeme doğrulanamadı.";
     if (ok && pl.kind === "farmer") {
       const paid = await listPaid(env, pl.uid);
@@ -47,7 +47,7 @@ export async function onRequest({ request, env }) {
   const sp = u.message && u.message.successful_payment;
   if (sp) {
     const pl = parsePayload(sp.invoice_payload);
-    if (pl && sp.currency === "XTR" && sp.total_amount === amount && String(u.message.from.id) === pl.uid) {
+    if (pl && sp.currency === "XTR" && sp.total_amount === expect(pl) && String(u.message.from.id) === pl.uid) {
       try {
         if (pl.kind === "farmer") await recordPaid(env, pl.uid, sp.telegram_payment_charge_id);
         else await recordUnlock(env, pl.uid, pl.item, sp.telegram_payment_charge_id);
