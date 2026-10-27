@@ -611,7 +611,7 @@ function buildBG(){
 var KEY='ciftlik-vadisi-v1';
 function fresh(){
   var p=[];for(var i=0;i<24;i++)p.push(i%5===0?1:(i<15?.12+((i*37)%83)/100:-1));
-  return{v:1,cash:0,coins:0,wheat:120,farmers:1,gender:'f',up:{yield:0,speed:0,price:0,cap:0},an:{c:0,s:0,d:0,p:0,w:0},plots:p,st:{harv:0,sold:0,eggs:0,wool:0},q:{},sound:true,seen:false};
+  return{v:1,cash:0,coins:0,wheat:120,farmers:1,gender:'f',up:{yield:0,speed:0,price:0,cap:0},an:{c:0,s:0,d:0,p:0,w:0},plots:p,st:{harv:0,sold:0,eggs:0,wool:0},q:{},sound:true,seen:false,t0:Date.now()};
 }
 var G,HAD=false;
 try{var raw=localStorage.getItem(KEY);HAD=!!raw;G=raw?JSON.parse(raw):null}catch(e){G=null}
@@ -1964,7 +1964,13 @@ function refreshUI(){
   ANI.forEach(function(d){
     var n=cnt(d.k),t=$('t_'+d.k),p=$('p_'+d.k),b=$('b_'+d.k),cs=aCost(d);
     if(n>=d.max){t.textContent=d.name+' '+n+'/'+d.max;p.textContent='Dolu';b.classList.add('off')}
-    else{t.textContent=n>0?d.name+' '+n+'/'+d.max:'Satılık';p.innerHTML=fmtN(cs)+' <span class="ico" style="width:17px;height:17px" data-i="coin"></span>';injectIcons(p);b.classList.toggle('off',G.coins<cs)}
+    else{
+      var lock=dayNum()<UNLOCK_DAY[d.k],needStar=!!(STAR_ITEM[d.k]&&!SRV.unl[d.k]&&n===0);
+      t.textContent=lock?'Kilitli':(n>0?d.name+' '+n+'/'+d.max:'Satılık');
+      if(lock){p.textContent='Gün '+UNLOCK_DAY[d.k]}
+      else{p.innerHTML=fmtN(cs)+' <span class="ico" style="width:17px;height:17px" data-i="coin"></span>';injectIcons(p)}
+      var bl=(needStar&&!lock)?'Al +'+STAR_AMT+'⭐':'Al';if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=(needStar&&!lock)?'15px':'19px'}
+      b.classList.toggle('off',lock||G.coins<cs)}
   });
   $('bHire').style.filter=maxF?'grayscale(.7) brightness(.85)':'none';
   var claimable=questList().some(function(q){return !G.q[q.id]&&q.cur>=q.goal});$('dotQ').classList.toggle('on',claimable);
@@ -1976,6 +1982,31 @@ function buyFarmer(){
 }
 function animalSound(k,v){if(k==='c')SND.cluck(v);else if(k==='d')SND.quack();else if(k==='s')SND.baa(v);else if(k==='p')SND.buzz();else SND.moo()}
 function buyAnimal(k){
+  var d=DEF[k],n=cnt(k);if(n>=d.max)return;
+  var day=dayNum();if(day<UNLOCK_DAY[k]){toast(d.name+' '+UNLOCK_DAY[k]+'. günde açılır (şu an '+day+'. gün).');SND.err();return}
+  var c=aCost(d);if(G.coins<c){toast('Yetersiz altın: '+fmtN(c)+' gerekli.');SND.err();return}
+  if(STAR_ITEM[k]&&!SRV.unl[k]&&n===0){
+    if(!(TGW&&TGW.openInvoice&&TGW.initData)){toast(d.name+' yalnızca Telegram içinde '+STAR_AMT+' ⭐ ile açılır.');SND.err();return}
+    starUnlock(k);return}
+  buyAnimalDo(k);
+}
+function starUnlock(k){
+  if(starBusy)return;starBusy=true;var d=DEF[k];toast('Ödeme ekranı hazırlanıyor...');
+  function end(){starBusy=false}
+  starPost('/api/invoice',{initData:TGW.initData,item:k}).then(function(r){
+    if(r.status===409){starSync().then(function(){end();if(SRV.unl[k])buyAnimalDo(k)});return}
+    if(r.status!==200||!r.j.link){end();toast('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.');SND.err();return}
+    TGW.openInvoice(r.j.link,function(st){
+      if(st==='paid'){var n=0;toast('Ödeme alındı...');
+        (function poll(){starSync().then(function(){
+          if(SRV.unl[k]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast('Yıldız ödendi! Altının yetince '+d.name+' alabilirsin.')}
+          else if(++n>=10){end();toast('Ödeme alındı ama henüz görünmedi. Biraz sonra tekrar dene.')}
+          else setTimeout(poll,1500)})})();
+      }else{end();toast(st==='cancelled'?'Ödeme iptal edildi.':st==='failed'?'Ödeme başarısız oldu.':'Ödeme bekleniyor...')}
+    });
+  }).catch(function(){end();toast('Bağlantı hatası. İnternetini kontrol et.')});
+}
+function buyAnimalDo(k){
   var d=DEF[k],n=cnt(k);if(n>=d.max)return;
   var c=aCost(d);if(G.coins<c){toast('Yetersiz altın: '+fmtN(c)+' gerekli.');SND.err();return}
   G.coins-=c;G.an[k]=n+1;syncAnimals();SND.buy();
@@ -2075,6 +2106,9 @@ function renderModal(){
   p.innerHTML=h;injectIcons(p);
   if(n==='hire'){try{var qe=$('qr');if(qe&&window.QRCode){qe.innerHTML='';new QRCode(qe,{text:PAY_ADDR,width:106,height:106,colorDark:'#2a1608',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});qe.style.display='block'}}catch(e){}}
 }
+var UNLOCK_DAY={c:1,d:2,s:8,p:15,w:31},STAR_ITEM={s:1,w:1},SRV={first:0,now:0,at:0,unl:{}};
+if(!G.t0)G.t0=Date.now();
+function dayNum(){var base=SRV.first||G.t0||Date.now(),nowMs=SRV.first?SRV.now+(Date.now()-SRV.at):Date.now();return Math.max(1,Math.floor((nowMs-base)/86400000)+1)}
 var starBusy=false;
 function starPost(path,body){return fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return{status:r.status,j:j}})})}
 function starApply(charges){
@@ -2087,7 +2121,11 @@ function starApply(charges){
 }
 function starSync(){
   if(!TGW||!TGW.initData)return Promise.resolve(0);
-  return starPost('/api/status',{initData:TGW.initData}).then(function(r){return r.status===200?starApply(r.j.charges):0}).catch(function(){return 0});
+  return starPost('/api/status',{initData:TGW.initData}).then(function(r){
+    if(r.status!==200)return 0;
+    if(r.j.firstSeen){SRV.first=r.j.firstSeen;SRV.now=r.j.now;SRV.at=Date.now()}
+    SRV.unl=r.j.unlocks||{};
+    var a=starApply(r.j.charges);refreshUI();return a}).catch(function(){return 0});
 }
 function starBuy(){
   if(starBusy)return;starBusy=true;hMsg('Ödeme ekranı hazırlanıyor...',true);

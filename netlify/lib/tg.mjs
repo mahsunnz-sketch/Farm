@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { getStore } from "@netlify/blobs";
 
 export const MAX_EXTRA = 3; // 1 ücretsiz + 3 ödemeli = 4 çiftçi
+export const UNLOCK_ITEMS = { s: "Koyun", w: "İnek" }; // Yıldızla açılan hayvanlar
 export const price = () => {
   const p = parseInt(Netlify.env.get("STAR_PRICE") || "100", 10);
   return Number.isFinite(p) && p > 0 ? p : 100;
@@ -60,4 +61,24 @@ export async function listPaid(uid) {
 export async function recordPaid(uid, chargeId, info) {
   const key = `paid/${uid}/${chargeId}`;
   await store().setJSON(key, info, { onlyIfNew: true });
+}
+
+export async function listUnlocks(uid) {
+  const { blobs } = await store().list({ prefix: `unlock/${uid}/` });
+  const out = {};
+  for (const b of blobs) out[b.key.split("/").pop()] = true;
+  return out;
+}
+
+export async function recordUnlock(uid, item, chargeId) {
+  await store().setJSON(`unlock/${uid}/${item}`, { at: Date.now(), charge: chargeId }, { onlyIfNew: true });
+}
+
+// Oyuncunun ilk görüldüğü an (gün sayacı için, sunucu saatiyle)
+export async function firstSeen(uid) {
+  const s = store();
+  const key = `user/${uid}`;
+  await s.setJSON(key, { at: Date.now() }, { onlyIfNew: true });
+  const rec = await s.get(key, { type: "json" });
+  return rec && rec.at ? rec.at : Date.now();
 }
