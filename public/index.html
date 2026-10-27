@@ -619,7 +619,7 @@ if(!G||G.v!==1||!G.plots||G.plots.length!==24)G=fresh();
 if(!G.an)G.an={c:G.chickens||0,s:G.sheep||0,d:0,p:0,w:0};
 ['c','s','d','p','w'].forEach(function(k){if(G.an[k]==null)G.an[k]=0});
 var RESTORING=false;
-function save(){if(RESTORING)return;try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){}try{cloudQueue()}catch(e){}}
+function save(){if(RESTORING)return;G.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){}try{cloudQueue()}catch(e){}}
 /* ---------- TRX ile çiftçi alma ---------- */
 var PAYKEY='ciftlik-vadisi-pay',PAY_ADDR='TUYzDrvM5idScQor3b2y8EfSbMFCb8ofCf',PAY_AMT=3,MAXF=4,STAR_AMT=100,PUBJ={"kty":"EC","crv":"P-256","x":"Ey96kmn5Ft-byDn9SLaQJYfIUbRvpCfNoAVn-Cx0E4A","y":"HtgEOmfxh8uJ5rzvGq4csn6IsFiO-4czrlbjr9I9n6M"};
 var PAY=null;
@@ -835,6 +835,27 @@ function stopMusic(){
 /* ---------- toast ---------- */
 var toastT=0;
 function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},2100)}
+
+/* ---------- çevrimdışı kazanç ---------- */
+var OFF_MAX=12*3600,OFF_MIN=45;
+function offlineApply(){
+  var now=Date.now(),last=G.last||0;G.last=now;
+  if(!last)return;
+  var sec=Math.min(OFF_MAX,(now-last)/1000);if(sec<OFF_MIN)return;
+  var gt=growTime(),yp=yieldPer(),n=G.plots.length;
+  var perSec=Math.min(n/(gt+6),G.farmers/7);
+  var made=Math.floor(sec*perSec)*yp,room=Math.max(0,capacity()-G.wheat),wheat=Math.min(made,room);
+  G.wheat+=wheat;G.st.harv+=wheat;
+  for(var i=0;i<n;i++){var pv=G.plots[i];if(pv>=0&&pv<1)G.plots[i]=Math.min(1,pv+sec/gt)}
+  var coins=0,cash=0;
+  ['c','d','s','p','w'].forEach(function(k){var d=DEF[k],c=cnt(k);if(!d||!c)return;var v=Math.floor(sec/d.time)*c*d.auto;if(d.cur==='coins')coins+=v;else cash+=v});
+  G.coins+=coins;G.cash+=cash;
+  var m=Math.round(sec/60),tm=m>=60?Math.floor(m/60)+' sa '+(m%60)+' dk':m+' dk',parts=[];
+  if(wheat>0)parts.push('+'+fmtN(wheat)+' buğday');if(cash>0)parts.push('+'+fmtN(cash)+' nakit');if(coins>0)parts.push('+'+fmtN(coins)+' altın');
+  if(!parts.length&&made>0)parts.push('Depo dolu');
+  if(parts.length)setTimeout(function(){toast('Yokken ('+tm+'): '+parts.join(', '))},900);
+  save();
+}
 
 /* ---------- varlıklar: çiftçiler, hayvanlar, parçacıklar ---------- */
 var plotRes=[];for(var pi=0;pi<24;pi++)plotRes.push(null);
@@ -2242,6 +2263,7 @@ function init(){
   injectIcons();
   lastW=$('wrap').clientWidth;rebuild();
   syncFarmers();syncAnimals();
+  offlineApply();
   var cols=['#ff9a3c','#6fb4ff','#ff8fb4'];
   for(var i=0;i<3;i++)butter.push({cx:90+i*120,cy:380+i*40,rad:50+i*14,ph:i*2.1,x:0,y:0,col:cols[i]});
   for(var c=0;c<4;c++)clouds.push({x:c*220,y:140+c*270,r:120+c*18,sp:6+c*2});
@@ -2254,7 +2276,7 @@ function init(){
     if(ready){try{update(dt);frameDraw(T,dt)}catch(e){try{ctx.restore();ctx.restore()}catch(e2){}}}
   }
   requestAnimationFrame(loop);
-  document.addEventListener('visibilitychange',function(){if(document.hidden){save();try{if(AC&&AC.state==='running')AC.suspend()}catch(e){}}else if(AC){actx()}});
+  document.addEventListener('visibilitychange',function(){if(document.hidden){save();try{if(AC&&AC.state==='running')AC.suspend()}catch(e){}}else{offlineApply();if(AC)actx()}});
   window.addEventListener('pagehide',save);
 }
 if(document.fonts&&document.fonts.load){Promise.race([document.fonts.load('20px "Lilita One"'),new Promise(function(r){setTimeout(r,1200)})]).then(init,init)}else init();
