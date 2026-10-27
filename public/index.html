@@ -1985,9 +1985,8 @@ function refreshUI(){
     if(n>=d.max){t.textContent=d.name+' '+n+'/'+d.max;p.textContent='Dolu';b.classList.add('off')}
     else{
       var lock=dayNum()<UNLOCK_DAY[d.k],needStar=!!(STAR_ITEM[d.k]&&!SRV.unl[d.k]&&n===0);
-      t.textContent=lock?'Kilitli':(n>0?d.name+' '+n+'/'+d.max:'Satılık');
-      if(lock){p.textContent='Gün '+UNLOCK_DAY[d.k]}
-      else{p.innerHTML=fmtN(cs)+' <span class="ico" style="width:17px;height:17px" data-i="coin"></span>';injectIcons(p)}
+      t.textContent=lock?'Kilitli · Gün '+UNLOCK_DAY[d.k]:(n>0?d.name+' '+n+'/'+d.max:'Satılık');
+      {p.innerHTML=fmtN(cs)+' <span class="ico" style="width:17px;height:17px" data-i="coin"></span>';injectIcons(p)}
       var bl=(needStar&&!lock)?'Al +'+STAR_AMT+'⭐':'Al';if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=(needStar&&!lock)?'15px':'19px'}
       b.classList.toggle('off',lock||G.coins<cs)}
   });
