@@ -2014,7 +2014,7 @@ function starUnlock(k){
   function end(){starBusy=false}
   starPost('/api/invoice',{initData:TGW.initData,item:k}).then(function(r){
     if(r.status===409){starSync().then(function(){end();if(SRV.unl[k])buyAnimalDo(k)});return}
-    if(r.status!==200||!r.j.link){end();toast('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.');SND.err();return}
+    if(r.status!==200||!r.j||!r.j.link){end();toast('Satın alma şu an kullanılamıyor.'+errTag(r));SND.err();return}
     TGW.openInvoice(r.j.link,function(st){
       if(st==='paid'){var n=0;toast('Ödeme alındı...');
         (function poll(){starSync().then(function(){
@@ -2129,7 +2129,7 @@ var UNLOCK_DAY={c:1,d:2,s:8,p:15,w:31},STAR_ITEM={s:1,w:1},SRV={first:0,now:0,at
 if(!G.t0)G.t0=Date.now();
 function dayNum(){var base=SRV.first||G.t0||Date.now(),nowMs=SRV.first?SRV.now+(Date.now()-SRV.at):Date.now();return Math.max(1,Math.floor((nowMs-base)/86400000)+1)}
 var starBusy=false;
-function starPost(path,body){return fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(j){return{status:r.status,j:j}})})}
+function starPost(path,body){return fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().catch(function(){return null}).then(function(j){return{status:r.status,j:j}})})}
 function starApply(charges){
   var have={},add=0;PAY.paid.forEach(function(x){have[x.c]=1});
   (charges||[]).forEach(function(id){var c='star:'+id;if(!have[c]&&PAY.paid.length<MAXF-1){PAY.paid.push({s:PAY.paid.length+1,c:c});have[c]=1;add++}});
@@ -2146,12 +2146,13 @@ function starSync(){
     SRV.unl=r.j.unlocks||{};
     var a=starApply(r.j.charges);refreshUI();return a}).catch(function(){return 0});
 }
+function errTag(r){try{return ' (hata '+r.status+': '+((r.j&&(r.j.error+(r.j.detail?' - '+r.j.detail:'')))||'yanıt yok')+')'}catch(e){return ''}}
 function starBuy(){
   if(starBusy)return;starBusy=true;hMsg('Ödeme ekranı hazırlanıyor...',true);
   function done(){starBusy=false}
   starPost('/api/invoice',{initData:TGW.initData}).then(function(r){
     if(r.status===409){done();hMsg('Tüm çiftçiler zaten alındı.',false);starSync();return}
-    if(r.status!==200||!r.j.link){done();hMsg('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.',false);SND.err();return}
+    if(r.status!==200||!r.j||!r.j.link){done();hMsg('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.'+errTag(r),false);SND.err();return}
     TGW.openInvoice(r.j.link,function(st){
       if(st==='paid'){
         hMsg('Ödeme alındı, çiftçin geliyor...',true);var n=0;
