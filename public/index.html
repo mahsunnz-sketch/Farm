@@ -460,8 +460,8 @@ var ANI=[
   {k:'s',name:'Koyun',max:3,cost:2000,mul:1.8,cur:'cash',val:45,auto:20,time:30,sx:40,sy:905,is:1.5,say:'Mee!',tip:'Yünlerine dokun.'},
   {k:'p',name:'Kovan',max:3,cost:2500,mul:1.8,cur:'cash',val:90,auto:40,time:36,sx:250,sy:905,is:1.15,say:'Bzzz!',tip:'Ballarına dokun.'},
   {k:'w',name:'İnek',max:3,cost:3000,mul:1.9,cur:'cash',val:200,auto:90,time:45,sx:40,sy:1120,is:1.25,say:'Möö!',tip:'Sütlerine dokun.'},
-  {k:'z',name:'Domuz',max:4,cost:10000,mul:1,cur:'cash',val:300,auto:130,time:50,sx:74,sy:1384,big:1,is:1.2,say:'Hruf hruf!',tip:'Mantarlarına dokun.'},
-  {k:'e',name:'Keçi',max:4,cost:20000,mul:1,cur:'cash',val:420,auto:180,time:55,sx:74,sy:1664,big:1,is:1.2,say:'Meee!',tip:'Peynirlerine dokun.'},
+  {k:'z',name:'Domuz',max:4,cost:10000,mul:1,cur:'cash',val:300,auto:130,time:50,sx:74,sy:1664,big:1,is:1.2,say:'Hruf hruf!',tip:'Mantarlarına dokun.'},
+  {k:'e',name:'Keçi',max:4,cost:20000,mul:1,cur:'cash',val:420,auto:180,time:55,sx:74,sy:1384,big:1,is:1.2,say:'Meee!',tip:'Peynirlerine dokun.'},
   {k:'o',name:'Kaz',max:4,cost:35000,mul:1,cur:'cash',val:600,auto:260,time:60,sx:74,sy:1944,big:1,is:1.4,say:'Vonk vonk!',tip:'Yumurtalarına dokun.'},
   {k:'t',name:'Hindi',max:4,cost:50000,mul:1,cur:'cash',val:800,auto:340,time:65,sx:74,sy:2224,big:1,is:1.3,say:'Glu glu glu!',tip:'Tüylerine dokun.'}
 ];
@@ -588,13 +588,13 @@ function buildBG(){
         c.restore();
         // çit
         for(j=0;j<2;j++){var yo=j*9;
-          if(d.k==='z'){rail(px,py+yo,176,py+yo);rail(256,py+yo,px+pw,py+yo)}else rail(px,py+yo,px+pw,py+yo);
+          if(d.sy===1384){rail(px,py+yo,176,py+yo);rail(256,py+yo,px+pw,py+yo)}else rail(px,py+yo,px+pw,py+yo);
           rail(px,py+ph-12+yo,px+pw,py+ph-12+yo)}
         rail(px,py,px,py+ph-3);rail(px+pw,py,px+pw,py+ph-3);
         var xs=[];for(j=px;j<=px+pw;j+=42)xs.push(j);
-        xs.forEach(function(x){if(d.k==='z'&&x>170&&x<262)return;post(x,py+2);post(x,py+ph-10)});
+        xs.forEach(function(x){if(d.sy===1384&&x>170&&x<262)return;post(x,py+2);post(x,py+ph-10)});
         for(j=py+52;j<py+ph-30;j+=46){post(px,j);post(px+pw,j)}
-        post(176,py+2);post(256,py+2);
+        if(d.sy===1384){post(176,py+2);post(256,py+2)}
       });
       // bölüm tabelası
       [170,262].forEach(function(x){rr(c,x-5,1330,10,48,2);c.fillStyle=lg(c,x-5,0,x+5,0,[[0,'#b57a45'],[1,'#6f4426']]);c.fill();c.lineWidth=2;c.strokeStyle='#3a2112';c.stroke()});
