@@ -472,7 +472,7 @@ var K=[
   {x:-12,y:228,w:150,h:120},{x:2,y:238,w:310,h:116},{x:270,y:182,w:174,h:232},
   {x:332,y:398,w:64,h:252},{x:56,y:432,w:290,h:238},{x:188,y:650,w:56,h:700}
 ];
-ANI.forEach(function(d){if(d.big){K.push({x:48,y:d.sy-22,w:364,h:166});if(d.k!=='t')K.push({x:30,y:d.sy+134,w:400,h:150})}else K.push({x:d.sx-12,y:d.sy-6,w:166,h:210})});
+ANI.forEach(function(d){if(d.big){K.push({x:0,y:d.sy-22,w:456,h:166});if(d.k!=='t')K.push({x:30,y:d.sy+134,w:400,h:150})}else K.push({x:d.sx-12,y:d.sy-6,w:166,h:210})});
 var POND={x:352,y:1250,rx:92,ry:50};
 K.push({x:246,y:1168,w:216,h:166});
 K.push({x:210,y:362,w:70,h:62});
@@ -576,7 +576,7 @@ function buildBG(){
       var rr2=rngf(777),T=[['z','#b08a5a','#8f6a42'],['e','#e8cf88','#d2b362'],['o','#a4cc5e','#8cb64c'],['t','#dcbb7c','#c59d56']];
       ANI.forEach(function(d){
         if(!d.big)return;
-        var tn=T.filter(function(q){return q[0]===d.k})[0],px=60,py=d.sy-14,pw=340,ph=150,j;
+        var tn=T.filter(function(q){return q[0]===d.k})[0],px=118,py=d.sy-14,pw=330,ph=150,j;
         rr(c,px-4,py-4,pw+8,ph+8,18);c.fillStyle='rgba(60,40,15,.35)';c.fill();
         rr(c,px,py,pw,ph,14);c.fillStyle=lg(c,0,py,0,py+ph,[[0,tn[1]],[1,tn[2]]]);c.fill();
         c.save();rr(c,px,py,pw,ph,14);c.clip();
@@ -915,7 +915,7 @@ function syncFarmers(){
   while(farmers.length<G.farmers){var i=farmers.length;farmers.push({id:i,x:92+i*26,y:668,dir:1,g:farmerGender(i),state:'idle',wait:.3+i*.4,ph:0,at:0,target:-1,act:'',tx:0,ty:0})}
   farmers.forEach(function(f,i){f.g=farmerGender(i)});
 }
-var PEN={};ANI.forEach(function(d){PEN[d.k]=d.big?{x0:236,x1:388,y0:d.sy+60,y1:d.sy+114}:{x0:d.sx+38,x1:d.sx+108,y0:d.sy+160,y1:d.sy+184}});
+var PEN={};ANI.forEach(function(d){PEN[d.k]=d.big?{x0:148,x1:418,y0:d.sy+54,y1:d.sy+112}:{x0:d.sx+38,x1:d.sx+108,y0:d.sy+160,y1:d.sy+184}});
 function syncAnimals(){ANI.forEach(function(d){var have=0;animals.forEach(function(a){if(a.k===d.k)have++});var need=Math.max(1,cnt(d.k));while(have<need){addAnimal(d.k,have);have++}})}
 function addAnimal(k,i){var p=PEN[k];animals.push({k:k,i:i,x:k==='p'?p.x0-8+i*46:p.x0+10+Math.random()*(p.x1-p.x0-20),y:k==='p'?p.y0+24:p.y0+Math.random()*(p.y1-p.y0),dir:Math.random()<.5?-1:1,tx:0,ty:0,wait:Math.random()*2,moving:false,ph:Math.random()*6,peck:0,dance:0,dnc:0,timer:8+Math.random()*10})}
 function popup(x,y,text,col){parts.push({t:'text',x:x,y:y,vx:0,vy:-26,life:1.3,max:1.3,text:text,col:col||'#fff'})}
@@ -2150,12 +2150,13 @@ function refreshUI(){
   var sellOff=truck.state!=='park'||G.wheat<1;$('bSell').classList.toggle('off',sellOff);
   ANI.forEach(function(d){
     var n=cnt(d.k),t=$('t_'+d.k),p=$('p_'+d.k),b=$('b_'+d.k),cs=aCost(d);
+    if(d.big){var sg=b.parentNode;if(sg)sg.style.display=(n>=d.max)?'none':''}
     if(n>=d.max){t.textContent=d.name+' '+n+'/'+d.max;p.textContent='Dolu';b.classList.add('off')}
     else{
       var early=!!SRV.unl[d.k.toUpperCase()],lock=dayNum()<UNLOCK_DAY[d.k]&&!early,canEarly=lock&&!!d.big&&!!(TGW&&TGW.openInvoice&&TGW.initData),needStar=!!(STAR_ITEM[d.k]&&!SRV.unl[d.k]&&n===0);
       t.textContent=lock?'Kilitli · Gün '+UNLOCK_DAY[d.k]:(n>0?d.name+' '+n+'/'+d.max:'Satılık');
-      {p.innerHTML=fmtN(cs)+' <span class="ico" style="width:17px;height:17px" data-i="coin"></span>';injectIcons(p)}
-      var bl=canEarly?'Erken '+earlyPrice(d.k)+'⭐':((needStar&&!lock)?'Al +'+STAR_COST[d.k]+'⭐':'Al');if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=(canEarly||(needStar&&!lock))?'15px':'19px'}
+      {var isz=d.big?'13px':'17px';p.innerHTML=fmtN(cs)+' <span class="ico" style="width:'+isz+';height:'+isz+'" data-i="coin"></span>';injectIcons(p)}
+      var bl=canEarly?'Erken '+earlyPrice(d.k)+'⭐':((needStar&&!lock)?'Al +'+STAR_COST[d.k]+'⭐':'Al');if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=d.big?((canEarly||(needStar&&!lock))?'11px':'13px'):((canEarly||(needStar&&!lock))?'15px':'19px')}
       b.classList.toggle('off',(lock&&!canEarly)||G.coins<cs)}
   });
   $('bHire').style.filter=maxF?'grayscale(.7) brightness(.85)':'none';
@@ -2423,6 +2424,10 @@ $('bSell').addEventListener('click',startSell);
 $('bHire').addEventListener('click',function(){openModal('hire')});
 ANI.forEach(function(d){
   var el=document.createElement('div');el.className='wood sign';
+  if(d.big){
+    el.style.cssText='left:6px;top:'+(d.sy+18)+'px;width:104px;height:86px;padding:5px;gap:2px';
+    el.innerHTML='<div style="display:flex;align-items:center;gap:4px;height:30px"><img data-k="'+d.k+'" alt="" width="26" height="26" style="flex:none"><div class="num" id="t_'+d.k+'" style="font-size:11px;line-height:1.05;min-width:0">Satılık</div></div><div class="num" id="p_'+d.k+'" style="font-size:13px;display:flex;align-items:center;gap:3px;white-space:nowrap"></div><button class="btn blue" id="b_'+d.k+'" style="height:24px;font-size:12px">Al</button>';
+    $('ui').appendChild(el);$('b_'+d.k).addEventListener('click',function(){buyAnimal(d.k)});return}
   el.style.cssText='left:'+d.sx+'px;top:'+d.sy+'px;width:142px;height:100px;padding:7px;gap:3px';
   el.innerHTML='<div style="display:flex;align-items:center;gap:6px;height:48px"><img data-k="'+d.k+'" alt="" width="42" height="42" style="flex:none"><div style="min-width:0"><div class="num" id="t_'+d.k+'" style="font-size:16px;line-height:1.05;white-space:nowrap">Satılık</div><div class="num" id="p_'+d.k+'" style="font-size:17px;display:flex;align-items:center;gap:4px;white-space:nowrap"></div></div></div><button class="btn blue" id="b_'+d.k+'" style="height:30px;font-size:19px">Al</button>';
   $('ui').appendChild(el);
