@@ -702,7 +702,7 @@ function cloudQueue(){
 if(G.farmers<1+PAY.paid.length)G.farmers=Math.min(MAXF,1+PAY.paid.length);
 var yieldPer=function(){return 1+G.up.yield};
 var growTime=function(){return 18*Math.pow(.88,G.up.speed)};
-var sellPrice=function(){return 2+G.up.price};
+var sellPrice=function(){return 2.5+G.up.price};
 var capacity=function(){return 1000+G.up.cap*1000};
 function cost(b,m,l){return Math.round(b*Math.pow(m,l)/5)*5}
 var hireCost=function(){return cost(150,1.9,G.farmers-1)};
@@ -1696,7 +1696,7 @@ function updTruck(dt){
     tk.timer+=dt;tk.fl+=dt;
     if(tk.fl>.13&&tk.timer<1.45){tk.fl=0;flyers.push({x0:tk.x+44,y0:276,x1:66,y1:318,t:0,dur:.5,v:0,sm:true})}
     if(tk.timer>=1.9){
-      var inc=tk.load*tk.price,bonus=Math.floor(tk.load/25);
+      var inc=Math.floor(tk.load*tk.price+1e-6),bonus=Math.floor(tk.load*3/80+1e-6);
       G.cash+=inc;G.coins+=bonus;G.st.sold++;
       popup(66,222,'+'+fmtN(inc),'#a6f070');if(bonus>0)popup(100,202,'+'+bonus+' altın','#ffe27a');
       burst(66,300,16,['#a6f070','#ffe27a','#fff'],60);SND.cash();tk.load=0;tk.state='back';tk.dir=1;engineMode('run');
