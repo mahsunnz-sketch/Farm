@@ -1,8 +1,8 @@
 // Cloudflare Pages Functions için ortak yardımcılar (D1 veritabanı + Telegram)
 
 export const MAX_EXTRA = 3; // 1 ücretsiz + 3 ödemeli = 4 çiftçi
-export const UNLOCK_ITEMS = { s: "Koyun", w: "İnek", z: "Domuz", e: "Keçi", o: "Kaz", t: "Hindi", Z: "Domuz", E: "Keçi", O: "Kaz", T: "Hindi" }; // Yıldızla açılan hayvanlar
-export const UNLOCK_PRICE = { s: 100, w: 100, z: 150, e: 150, o: 150, t: 150 }; // Yıldız fiyatları
+export const UNLOCK_ITEMS = { s: "Koyun", p: "Kovan", w: "İnek", z: "Domuz", e: "Keçi", o: "Kaz", t: "Hindi", Z: "Domuz", E: "Keçi", O: "Kaz", T: "Hindi" }; // Yıldızla açılan hayvanlar
+export const UNLOCK_PRICE = { s: 100, p: 100, w: 100, z: 150, e: 150, o: 150, t: 150 }; // Yıldız fiyatları
 
 export function price(env) {
   const p = parseInt(env.STAR_PRICE || "100", 10);
