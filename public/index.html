@@ -472,9 +472,9 @@ var K=[
   {x:-12,y:228,w:150,h:120},{x:2,y:238,w:310,h:116},{x:270,y:182,w:174,h:232},
   {x:332,y:398,w:64,h:252},{x:56,y:432,w:290,h:238},{x:188,y:650,w:56,h:700}
 ];
-K.push({x:40,y:1345,w:380,h:110});K.push({x:0,y:1330,w:230,h:150});K.push({x:0,y:1440,w:110,h:1030});
+K.push({x:40,y:1345,w:380,h:110});
 ANI.forEach(function(d){if(d.big){K.push({x:0,y:d.sy-22,w:456,h:166});if(d.k!=='t')K.push({x:30,y:d.sy+134,w:400,h:150})}else K.push({x:d.sx-12,y:d.sy-6,w:166,h:210})});
-var ROADPTS=[[216,646],[214,740],[220,840],[215,940],[219,1040],[215,1140],[219,1240],[217,1340],[200,1388],[130,1412],[72,1436],[56,1480],[56,1700],[56,2000],[56,2300],[56,2470]];
+var ROADPTS=[[216,646],[214,740],[220,840],[215,940],[219,1040],[215,1140],[219,1240],[217,1340],[216,1430],[216,1700],[216,2000],[216,2300],[216,2470]];
 function nearRoad(x,y,m){for(var i=0;i<ROADPTS.length-1;i++){var a=ROADPTS[i],b=ROADPTS[i+1],dx=b[0]-a[0],dy=b[1]-a[1],t=Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/(dx*dx+dy*dy))),ex=a[0]+t*dx-x,ey=a[1]+t*dy-y;if(ex*ex+ey*ey<m*m)return true}return false}
 var POND={x:352,y:1250,rx:92,ry:50};
 K.push({x:246,y:1168,w:216,h:166});
@@ -506,7 +506,7 @@ function genWorld(){
       trees.push(t);if(kind==='blossom')blossomSpots.push(t);
     }
   }
-  [[18,412],[402,120],[426,372],[16,760],[430,700],[408,1010],[18,1000],[12,1230],[350,300],[430,1180],[404,1424],[352,1448],[432,1376]].forEach(function(p,i){rocks.push({x:p[0],y:p[1],v:i%3,k:.9+(i%3)*.15})});
+  [[18,412],[402,120],[426,372],[16,760],[430,700],[408,1010],[18,1000],[12,1230],[350,300],[430,1180],[58,1432],[404,1424],[104,1446],[352,1448],[26,1372],[432,1376]].forEach(function(p,i){rocks.push({x:p[0],y:p[1],v:i%3,k:.9+(i%3)*.15})});
   var kinds=['flower','rose','berry','flower'],tries=0;
   while(bushes.length<26&&tries++<1200){
     var bx=8+r()*444,by=60+r()*(H-90);
@@ -579,22 +579,22 @@ function buildBG(){
       var rr2=rngf(777),T=[['z','#b08a5a','#8f6a42'],['e','#e8cf88','#d2b362'],['o','#a4cc5e','#8cb64c'],['t','#dcbb7c','#c59d56']];
       ANI.forEach(function(d){
         if(!d.big)return;
-        var tn=T.filter(function(q){return q[0]===d.k})[0],px=208,py=d.sy-14,pw=240,ph=150,j;
+        var tn=T.filter(function(q){return q[0]===d.k})[0],px=118,py=d.sy-14,pw=330,ph=150,j;
         rr(c,px-4,py-4,pw+8,ph+8,18);c.fillStyle='rgba(60,40,15,.35)';c.fill();
         rr(c,px,py,pw,ph,14);c.fillStyle=lg(c,0,py,0,py+ph,[[0,tn[1]],[1,tn[2]]]);c.fill();
         c.save();rr(c,px,py,pw,ph,14);c.clip();
         for(j=0;j<260;j++){c.fillStyle=rr2()<.5?'rgba(120,80,30,.28)':'rgba(255,245,200,.3)';c.beginPath();c.ellipse(px+rr2()*pw,py+rr2()*ph,1+rr2()*2.6,.7+rr2()*1.2,0,0,TAU);c.fill()}
-        if(d.k==='z'){[[170,60,40,15],[215,112,22,8]].forEach(function(m){c.fillStyle='#6b4726';c.beginPath();c.ellipse(px+m[0]-20,py+m[1],m[2],m[3],0,0,TAU);c.fill();c.fillStyle='rgba(255,255,255,.18)';c.beginPath();c.ellipse(px+m[0]-28,py+m[1]-3,m[2]*.5,m[3]*.35,0,0,TAU);c.fill()})}
-        if(d.k==='e'){for(j=0;j<6;j++){var hx=px+30+rr2()*180,hy=py+25+rr2()*100;c.strokeStyle='rgba(170,120,30,.55)';c.lineWidth=2;c.beginPath();c.moveTo(hx,hy);c.lineTo(hx+8+rr2()*8,hy+rr2()*4-2);c.stroke()}}
-        if(d.k==='o'){c.fillStyle='#4f98c8';c.beginPath();c.ellipse(px+170,py+104,46,18,0,0,TAU);c.fill();c.strokeStyle='#8fcbe8';c.lineWidth=3;c.stroke();c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.ellipse(px+158,py+100,19,5,-.1,0,TAU);c.fill()}
-        if(d.k==='t'){for(j=0;j<40;j++){c.fillStyle='rgba(235,190,70,.8)';c.beginPath();c.arc(px+40+rr2()*170,py+25+rr2()*100,1.2,0,TAU);c.fill()}}
+        if(d.k==='z'){[[250,60,44,16],[310,112,26,9]].forEach(function(m){c.fillStyle='#6b4726';c.beginPath();c.ellipse(px+m[0]-20,py+m[1],m[2],m[3],0,0,TAU);c.fill();c.fillStyle='rgba(255,255,255,.18)';c.beginPath();c.ellipse(px+m[0]-28,py+m[1]-3,m[2]*.5,m[3]*.35,0,0,TAU);c.fill()})}
+        if(d.k==='e'){for(j=0;j<6;j++){var hx=px+170+rr2()*140,hy=py+25+rr2()*100;c.strokeStyle='rgba(170,120,30,.55)';c.lineWidth=2;c.beginPath();c.moveTo(hx,hy);c.lineTo(hx+8+rr2()*8,hy+rr2()*4-2);c.stroke()}}
+        if(d.k==='o'){c.fillStyle='#4f98c8';c.beginPath();c.ellipse(px+268,py+104,46,18,0,0,TAU);c.fill();c.strokeStyle='#8fcbe8';c.lineWidth=3;c.stroke();c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.ellipse(px+256,py+100,19,5,-.1,0,TAU);c.fill()}
+        if(d.k==='t'){for(j=0;j<40;j++){c.fillStyle='rgba(235,190,70,.8)';c.beginPath();c.arc(px+170+rr2()*150,py+25+rr2()*100,1.2,0,TAU);c.fill()}}
         c.restore();
         // çit
         for(j=0;j<2;j++){var yo=j*9;
           rail(px,py+yo,px+pw,py+yo);
           rail(px,py+ph-12+yo,px+pw,py+ph-12+yo)}
         rail(px,py,px,py+ph-3);rail(px+pw,py,px+pw,py+ph-3);
-        var xs=[];for(j=px;j<=px+pw;j+=40)xs.push(j);
+        var xs=[];for(j=px;j<=px+pw;j+=42)xs.push(j);
         xs.forEach(function(x){post(x,py+2);post(x,py+ph-10)});
         for(j=py+52;j<py+ph-30;j+=46){post(px,j);post(px+pw,j)}
       });
@@ -618,7 +618,7 @@ function buildBG(){
         stone(x+rl()*8,1386+rl()*6,12+rl()*6,9+rl()*4);
       }
       // yolun iki yanında büyük kayalar
-      [[162,1372,18,13],[250,1372,22,15],[246,1388,13,9],[120,1404,12,9],[40,1426,14,10]].forEach(function(q){stone(q[0],q[1],q[2],q[3])});
+      [[168,1380,22,15],[266,1380,22,15],[160,1396,14,10],[274,1398,15,10]].forEach(function(q){stone(q[0],q[1],q[2],q[3])});
       // çiçek öbekleri
       var pal=[['#ffffff','#ffd23f'],['#ffe36b','#ff9a3c'],['#ff8fb4','#ffe36b'],['#c9a6ff','#ffe36b'],['#ff6a57','#ffe36b'],['#8fd0ff','#ffffff']];
       for(j=0;j<90;j++){
@@ -632,9 +632,9 @@ function buildBG(){
       }
     })();
     // bölüm tabelası
-      [40,148].forEach(function(x){rr(c,x-5,1404,10,48,2);c.fillStyle=lg(c,x-5,0,x+5,0,[[0,'#b57a45'],[1,'#6f4426']]);c.fill();c.lineWidth=2;c.strokeStyle='#3a2112';c.stroke()});
-      rr(c,44,1408,100,28,8);c.fillStyle=lg(c,0,1408,0,1436,[[0,'#d09a62'],[1,'#8a5a32']]);c.fill();c.lineWidth=2.4;c.strokeStyle='#3a2112';c.stroke();
-      c.font='15px "Lilita One","Trebuchet MS",sans-serif';c.textAlign='center';c.textBaseline='middle';c.lineWidth=4;c.lineJoin='round';c.strokeStyle='#3a2112';c.strokeText(L('Büyük Çiftlik'),94,1423,88);c.fillStyle='#fff4e0';c.fillText(L('Büyük Çiftlik'),94,1423,88);c.textBaseline='alphabetic';
+      [170,262].forEach(function(x){rr(c,x-5,1400,10,48,2);c.fillStyle=lg(c,x-5,0,x+5,0,[[0,'#b57a45'],[1,'#6f4426']]);c.fill();c.lineWidth=2;c.strokeStyle='#3a2112';c.stroke()});
+      rr(c,138,1404,148,30,8);c.fillStyle=lg(c,0,1404,0,1434,[[0,'#d09a62'],[1,'#8a5a32']]);c.fill();c.lineWidth=2.4;c.strokeStyle='#3a2112';c.stroke();
+      c.font='17px "Lilita One","Trebuchet MS",sans-serif';c.textAlign='center';c.textBaseline='middle';c.lineWidth=4;c.lineJoin='round';c.strokeStyle='#3a2112';c.strokeText(L('Büyük Çiftlik'),212,1420,134);c.fillStyle='#fff4e0';c.fillText(L('Büyük Çiftlik'),212,1420,134);c.textBaseline='alphabetic';
     })();
     // ambar tabela ipleri
     c.fillStyle='#4a2c16';c.fillRect(322,244,4,8);c.fillRect(404,244,4,8);
@@ -1181,7 +1181,7 @@ function syncFarmers(){
   while(farmers.length<G.farmers){var i=farmers.length;farmers.push({id:i,x:92+i*26,y:668,dir:1,g:farmerGender(i),state:'idle',wait:.3+i*.4,ph:0,at:0,target:-1,act:'',tx:0,ty:0})}
   farmers.forEach(function(f,i){f.g=farmerGender(i)});
 }
-var PEN={};ANI.forEach(function(d){PEN[d.k]=d.big?{x0:232,x1:428,y0:d.sy+54,y1:d.sy+112}:{x0:d.sx+38,x1:d.sx+108,y0:d.sy+160,y1:d.sy+184}});
+var PEN={};ANI.forEach(function(d){PEN[d.k]=d.big?{x0:148,x1:418,y0:d.sy+54,y1:d.sy+112}:{x0:d.sx+38,x1:d.sx+108,y0:d.sy+160,y1:d.sy+184}});
 function syncAnimals(){ANI.forEach(function(d){var have=0;animals.forEach(function(a){if(a.k===d.k)have++});var need=Math.max(1,cnt(d.k));while(have<need){addAnimal(d.k,have);have++}})}
 function addAnimal(k,i){var p=PEN[k];animals.push({k:k,i:i,x:k==='p'?p.x0-8+i*46:p.x0+10+Math.random()*(p.x1-p.x0-20),y:k==='p'?p.y0+24:p.y0+Math.random()*(p.y1-p.y0),dir:Math.random()<.5?-1:1,tx:0,ty:0,wait:Math.random()*2,moving:false,ph:Math.random()*6,peck:0,dance:0,dnc:0,timer:8+Math.random()*10})}
 function popup(x,y,text,col){parts.push({t:'text',x:x,y:y,vx:0,vy:-26,life:1.3,max:1.3,text:L(text),col:col||'#fff'})}
@@ -2750,7 +2750,7 @@ $('bHire').addEventListener('click',function(){openModal('hire')});
 ANI.forEach(function(d){
   var el=document.createElement('div');el.className='wood sign';
   if(d.big){
-    el.style.cssText='left:96px;top:'+(d.sy+18)+'px;width:104px;height:86px;padding:5px;gap:2px';
+    el.style.cssText='left:6px;top:'+(d.sy+18)+'px;width:104px;height:86px;padding:5px;gap:2px';
     el.innerHTML='<div style="display:flex;align-items:center;gap:4px;height:30px"><img data-k="'+d.k+'" alt="" width="26" height="26" style="flex:none"><div class="num" id="t_'+d.k+'" style="font-size:11px;line-height:1.05;min-width:0">Satılık</div></div><div class="num" id="p_'+d.k+'" style="font-size:13px;display:flex;align-items:center;gap:3px;white-space:nowrap"></div><button class="btn blue" id="b_'+d.k+'" style="height:24px;font-size:12px">Al</button>';
     $('ui').appendChild(el);$('b_'+d.k).addEventListener('click',function(){buyAnimal(d.k)});return}
   d.legs=[30,112].map(function(ox){var lg=document.createElement('div');lg.style.cssText='position:absolute;left:'+(d.sx+ox-5)+'px;top:'+(d.sy+96)+'px;width:10px;height:26px;border-radius:2px;border:2px solid #3a2112;box-sizing:border-box;background:linear-gradient(90deg,#b57a45,#6f4426);pointer-events:none';$('ui').appendChild(lg);return lg});
