@@ -569,7 +569,7 @@ function buildBG(){
     // tabela direkleri
     function sp(x,y0,y1){rr(c,x-5,y0,10,y1-y0,2);c.fillStyle=lg(c,x-5,0,x+5,0,[[0,'#b57a45'],[1,'#6f4426']]);c.fill();c.lineWidth=2;c.strokeStyle='#3a2112';c.stroke()}
     sp(104,500,538);sp(190,500,538);sp(256,500,532);
-    ANI.forEach(function(d){if(d.big)return;sp(d.sx+30,d.sy+96,d.sy+122);sp(d.sx+112,d.sy+96,d.sy+122)});
+    
 
     // büyük çiftlik bölümü (çitli, alt alta)
     (function(){
@@ -2150,7 +2150,7 @@ function refreshUI(){
   var sellOff=truck.state!=='park'||G.wheat<1;$('bSell').classList.toggle('off',sellOff);
   ANI.forEach(function(d){
     var n=cnt(d.k),t=$('t_'+d.k),p=$('p_'+d.k),b=$('b_'+d.k),cs=aCost(d);
-    if(d.big){var sg=b.parentNode;if(sg)sg.style.display=(n>=d.max)?'none':''}
+    {var sg=b.parentNode,full=(n>=d.max);if(sg)sg.style.display=full?'none':'';if(d.legs)d.legs.forEach(function(l){l.style.display=full?'none':''})}
     if(n>=d.max){t.textContent=d.name+' '+n+'/'+d.max;p.textContent='Dolu';b.classList.add('off')}
     else{
       var early=!!SRV.unl[d.k.toUpperCase()],lock=dayNum()<UNLOCK_DAY[d.k]&&!early,canEarly=lock&&!!d.big&&!!(TGW&&TGW.openInvoice&&TGW.initData),needStar=!!(STAR_ITEM[d.k]&&!SRV.unl[d.k]&&n===0);
@@ -2428,6 +2428,7 @@ ANI.forEach(function(d){
     el.style.cssText='left:6px;top:'+(d.sy+18)+'px;width:104px;height:86px;padding:5px;gap:2px';
     el.innerHTML='<div style="display:flex;align-items:center;gap:4px;height:30px"><img data-k="'+d.k+'" alt="" width="26" height="26" style="flex:none"><div class="num" id="t_'+d.k+'" style="font-size:11px;line-height:1.05;min-width:0">Satılık</div></div><div class="num" id="p_'+d.k+'" style="font-size:13px;display:flex;align-items:center;gap:3px;white-space:nowrap"></div><button class="btn blue" id="b_'+d.k+'" style="height:24px;font-size:12px">Al</button>';
     $('ui').appendChild(el);$('b_'+d.k).addEventListener('click',function(){buyAnimal(d.k)});return}
+  d.legs=[30,112].map(function(ox){var lg=document.createElement('div');lg.style.cssText='position:absolute;left:'+(d.sx+ox-5)+'px;top:'+(d.sy+96)+'px;width:10px;height:26px;border-radius:2px;border:2px solid #3a2112;box-sizing:border-box;background:linear-gradient(90deg,#b57a45,#6f4426);pointer-events:none';$('ui').appendChild(lg);return lg});
   el.style.cssText='left:'+d.sx+'px;top:'+d.sy+'px;width:142px;height:100px;padding:7px;gap:3px';
   el.innerHTML='<div style="display:flex;align-items:center;gap:6px;height:48px"><img data-k="'+d.k+'" alt="" width="42" height="42" style="flex:none"><div style="min-width:0"><div class="num" id="t_'+d.k+'" style="font-size:16px;line-height:1.05;white-space:nowrap">Satılık</div><div class="num" id="p_'+d.k+'" style="font-size:17px;display:flex;align-items:center;gap:4px;white-space:nowrap"></div></div></div><button class="btn blue" id="b_'+d.k+'" style="height:30px;font-size:19px">Al</button>';
   $('ui').appendChild(el);
