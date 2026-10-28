@@ -43,8 +43,8 @@ button{font-family:inherit;cursor:pointer;border:0;padding:0;background:none;col
 button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 #wrap{margin:0 auto;width:100%}
 #frame{position:relative;margin:0 auto;overflow:hidden;background:#6cbf3c}
-#stage{position:absolute;left:0;top:0;width:460px;height:2380px;transform-origin:0 0}
-#cv{display:block;width:460px;height:2380px;touch-action:pan-y}
+#stage{position:absolute;left:0;top:0;width:460px;height:2450px;transform-origin:0 0}
+#cv{display:block;width:460px;height:2450px;touch-action:pan-y}
 #ui{position:absolute;inset:0;pointer-events:none}
 #ui>*{pointer-events:auto;position:absolute}
 .wood{
@@ -172,7 +172,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 <script>
 (function(){
 'use strict';
-var W=460,H=2380,TAU=Math.PI*2;
+var W=460,H=2450,TAU=Math.PI*2;
 var RM=false;try{RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function lerp(a,b,t){return a+(b-a)*t}
@@ -460,10 +460,10 @@ var ANI=[
   {k:'s',name:'Koyun',max:3,cost:2000,mul:1.8,cur:'cash',val:45,auto:20,time:30,sx:40,sy:905,is:1.5,say:'Mee!',tip:'Yünlerine dokun.'},
   {k:'p',name:'Kovan',max:3,cost:2500,mul:1.8,cur:'cash',val:90,auto:40,time:36,sx:250,sy:905,is:1.15,say:'Bzzz!',tip:'Ballarına dokun.'},
   {k:'w',name:'İnek',max:3,cost:3000,mul:1.9,cur:'cash',val:200,auto:90,time:45,sx:40,sy:1120,is:1.25,say:'Möö!',tip:'Sütlerine dokun.'},
-  {k:'z',name:'Domuz',max:4,cost:10000,mul:1,cur:'cash',val:300,auto:130,time:50,sx:74,sy:1664,big:1,is:1.2,say:'Hruf hruf!',tip:'Mantarlarına dokun.'},
-  {k:'e',name:'Keçi',max:4,cost:20000,mul:1,cur:'cash',val:420,auto:180,time:55,sx:74,sy:1384,big:1,is:1.2,say:'Meee!',tip:'Peynirlerine dokun.'},
-  {k:'o',name:'Kaz',max:4,cost:35000,mul:1,cur:'cash',val:600,auto:260,time:60,sx:74,sy:1944,big:1,is:1.4,say:'Vonk vonk!',tip:'Yumurtalarına dokun.'},
-  {k:'t',name:'Hindi',max:4,cost:50000,mul:1,cur:'cash',val:800,auto:340,time:65,sx:74,sy:2224,big:1,is:1.3,say:'Glu glu glu!',tip:'Tüylerine dokun.'}
+  {k:'z',name:'Domuz',max:4,cost:10000,mul:1,cur:'cash',val:300,auto:130,time:50,sx:74,sy:1734,big:1,is:1.2,say:'Hruf hruf!',tip:'Mantarlarına dokun.'},
+  {k:'e',name:'Keçi',max:4,cost:20000,mul:1,cur:'cash',val:420,auto:180,time:55,sx:74,sy:1454,big:1,is:1.2,say:'Meee!',tip:'Peynirlerine dokun.'},
+  {k:'o',name:'Kaz',max:4,cost:35000,mul:1,cur:'cash',val:600,auto:260,time:60,sx:74,sy:2014,big:1,is:1.4,say:'Vonk vonk!',tip:'Yumurtalarına dokun.'},
+  {k:'t',name:'Hindi',max:4,cost:50000,mul:1,cur:'cash',val:800,auto:340,time:65,sx:74,sy:2294,big:1,is:1.3,say:'Glu glu glu!',tip:'Tüylerine dokun.'}
 ];
 var DEF={};ANI.forEach(function(d){DEF[d.k]=d});
 function cnt(k){return G.an[k]||0}
@@ -472,6 +472,7 @@ var K=[
   {x:-12,y:228,w:150,h:120},{x:2,y:238,w:310,h:116},{x:270,y:182,w:174,h:232},
   {x:332,y:398,w:64,h:252},{x:56,y:432,w:290,h:238},{x:188,y:650,w:56,h:700}
 ];
+K.push({x:40,y:1345,w:380,h:110});
 ANI.forEach(function(d){if(d.big){K.push({x:0,y:d.sy-22,w:456,h:166});if(d.k!=='t')K.push({x:30,y:d.sy+134,w:400,h:150})}else K.push({x:d.sx-12,y:d.sy-6,w:166,h:210})});
 var POND={x:352,y:1250,rx:92,ry:50};
 K.push({x:246,y:1168,w:216,h:166});
@@ -503,7 +504,7 @@ function genWorld(){
       trees.push(t);if(kind==='blossom')blossomSpots.push(t);
     }
   }
-  [[18,412],[402,120],[426,372],[16,760],[430,700],[408,1010],[18,1000],[12,1230],[350,300],[430,1180]].forEach(function(p,i){rocks.push({x:p[0],y:p[1],v:i%3,k:.9+(i%3)*.15})});
+  [[18,412],[402,120],[426,372],[16,760],[430,700],[408,1010],[18,1000],[12,1230],[350,300],[430,1180],[58,1432],[404,1424],[104,1446],[352,1448],[26,1372],[432,1376]].forEach(function(p,i){rocks.push({x:p[0],y:p[1],v:i%3,k:.9+(i%3)*.15})});
   var kinds=['flower','rose','berry','flower'],tries=0;
   while(bushes.length<26&&tries++<1200){
     var bx=8+r()*444,by=60+r()*(H-90);
@@ -537,7 +538,7 @@ function buildBG(){
     c.strokeStyle='rgba(235,228,190,.8)';c.lineWidth=2;c.setLineDash([10,9]);c.beginPath();c.moveTo(140,293);c.lineTo(300,293);c.stroke();c.setLineDash([]);
     // toprak yol (hayvan alanlarının yanında)
     (function(){
-      var pts=[[216,646],[214,740],[220,840],[215,940],[219,1040],[215,1140],[219,1240],[217,1340],[216,1360]];
+      var pts=[[216,646],[214,740],[220,840],[215,940],[219,1040],[215,1140],[219,1240],[217,1340],[216,1430]];
       function path(){c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(var q=1;q<pts.length-1;q++){c.quadraticCurveTo(pts[q][0],pts[q][1],(pts[q][0]+pts[q+1][0])/2,(pts[q][1]+pts[q+1][1])/2)}c.lineTo(pts[pts.length-1][0],pts[pts.length-1][1])}
       c.lineCap='round';c.lineJoin='round';
       path();c.strokeStyle='#7a5230';c.lineWidth=54;c.stroke();
@@ -588,18 +589,51 @@ function buildBG(){
         c.restore();
         // çit
         for(j=0;j<2;j++){var yo=j*9;
-          if(d.sy===1384){rail(px,py+yo,176,py+yo);rail(256,py+yo,px+pw,py+yo)}else rail(px,py+yo,px+pw,py+yo);
+          if(d.sy===1454){rail(px,py+yo,176,py+yo);rail(256,py+yo,px+pw,py+yo)}else rail(px,py+yo,px+pw,py+yo);
           rail(px,py+ph-12+yo,px+pw,py+ph-12+yo)}
         rail(px,py,px,py+ph-3);rail(px+pw,py,px+pw,py+ph-3);
         var xs=[];for(j=px;j<=px+pw;j+=42)xs.push(j);
-        xs.forEach(function(x){if(d.sy===1384&&x>170&&x<262)return;post(x,py+2);post(x,py+ph-10)});
+        xs.forEach(function(x){if(d.sy===1454&&x>170&&x<262)return;post(x,py+2);post(x,py+ph-10)});
         for(j=py+52;j<py+ph-30;j+=46){post(px,j);post(px+pw,j)}
-        if(d.sy===1384){post(176,py+2);post(256,py+2)}
+        if(d.sy===1454){post(176,py+2);post(256,py+2)}
       });
-      // bölüm tabelası
-      [170,262].forEach(function(x){rr(c,x-5,1330,10,48,2);c.fillStyle=lg(c,x-5,0,x+5,0,[[0,'#b57a45'],[1,'#6f4426']]);c.fill();c.lineWidth=2;c.strokeStyle='#3a2112';c.stroke()});
-      rr(c,138,1334,148,30,8);c.fillStyle=lg(c,0,1334,0,1364,[[0,'#d09a62'],[1,'#8a5a32']]);c.fill();c.lineWidth=2.4;c.strokeStyle='#3a2112';c.stroke();
-      c.font='18px "Lilita One","Trebuchet MS",sans-serif';c.textAlign='center';c.textBaseline='middle';c.lineWidth=4;c.lineJoin='round';c.strokeStyle='#3a2112';c.strokeText('Büyük Çiftlik',212,1350);c.fillStyle='#fff4e0';c.fillText('Büyük Çiftlik',212,1350);c.textBaseline='alphabetic';
+  
+    // büyük çiftlik girişi: taş duvar, çiçekler, kayalık
+    (function(){
+      var rl=rngf(909),x,j;
+      function stone(sx,sy,w,h){
+        c.fillStyle='rgba(20,40,15,.3)';c.beginPath();c.ellipse(sx+2,sy+h*.7,w*1.05,h*.5,0,0,TAU);c.fill();
+        c.fillStyle=rg(c,sx-w*.3,sy-h*.5,1,sx,sy,w*1.2,[[0,'#d2d5d8'],[.6,'#a5a9ae'],[1,'#7b7f85']]);c.strokeStyle='#585c62';c.lineWidth=1.4;
+        c.beginPath();c.ellipse(sx,sy,w,h,rl()*.3-.15,0,TAU);c.fill();c.stroke();
+        c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.ellipse(sx-w*.3,sy-h*.35,w*.4,h*.22,-.2,0,TAU);c.fill();
+        if(rl()<.4){c.fillStyle='rgba(90,150,60,.6)';c.beginPath();c.ellipse(sx+w*.1,sy+h*.55,w*.5,h*.22,0,0,TAU);c.fill()}
+      }
+      for(x=-4;x<470;x+=21){
+        if(x>182&&x<250)continue;
+        stone(x+rl()*6,1368+rl()*7,11+rl()*6,8+rl()*4);
+      }
+      for(x=6;x<470;x+=24){
+        if(x>176&&x<256)continue;
+        stone(x+rl()*8,1386+rl()*6,12+rl()*6,9+rl()*4);
+      }
+      // yolun iki yanında büyük kayalar
+      [[168,1380,22,15],[266,1380,22,15],[160,1396,14,10],[274,1398,15,10]].forEach(function(q){stone(q[0],q[1],q[2],q[3])});
+      // çiçek öbekleri
+      var pal=[['#ffffff','#ffd23f'],['#ffe36b','#ff9a3c'],['#ff8fb4','#ffe36b'],['#c9a6ff','#ffe36b'],['#ff6a57','#ffe36b'],['#8fd0ff','#ffffff']];
+      for(j=0;j<90;j++){
+        var fx=14+rl()*432,fy=1392+rl()*50;
+        if(fx>190&&fx<244)continue;
+        var cc=pal[Math.floor(rl()*pal.length)];flower(c,fx,fy,2+rl()*1.6,cc[0],cc[1]);
+      }
+      for(j=0;j<70;j++){
+        var gx=10+rl()*440,gy=1394+rl()*48;if(gx>192&&gx<242)continue;
+        c.strokeStyle='rgba(60,110,30,.7)';c.lineWidth=1.3;c.beginPath();c.moveTo(gx,gy);c.lineTo(gx-2,gy-5);c.moveTo(gx,gy);c.lineTo(gx+2,gy-5);c.stroke();
+      }
+    })();
+    // bölüm tabelası
+      [170,262].forEach(function(x){rr(c,x-5,1400,10,48,2);c.fillStyle=lg(c,x-5,0,x+5,0,[[0,'#b57a45'],[1,'#6f4426']]);c.fill();c.lineWidth=2;c.strokeStyle='#3a2112';c.stroke()});
+      rr(c,138,1404,148,30,8);c.fillStyle=lg(c,0,1404,0,1434,[[0,'#d09a62'],[1,'#8a5a32']]);c.fill();c.lineWidth=2.4;c.strokeStyle='#3a2112';c.stroke();
+      c.font='18px "Lilita One","Trebuchet MS",sans-serif';c.textAlign='center';c.textBaseline='middle';c.lineWidth=4;c.lineJoin='round';c.strokeStyle='#3a2112';c.strokeText('Büyük Çiftlik',212,1420);c.fillStyle='#fff4e0';c.fillText('Büyük Çiftlik',212,1420);c.textBaseline='alphabetic';
     })();
     // ambar tabela ipleri
     c.fillStyle='#4a2c16';c.fillRect(322,244,4,8);c.fillRect(404,244,4,8);
