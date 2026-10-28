@@ -2310,7 +2310,7 @@ function renderModal(){
   p.innerHTML=h;injectIcons(p);
   if(n==='hire'){try{var qe=$('qr');if(qe&&window.QRCode){qe.innerHTML='';new QRCode(qe,{text:PAY_ADDR,width:106,height:106,colorDark:'#2a1608',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});qe.style.display='block'}}catch(e){}}
 }
-var UNLOCK_DAY={c:1,d:2,s:8,p:15,w:31,z:45,e:60,o:75,t:90},STAR_ITEM={s:1,p:1,w:1,z:1,e:1,o:1,t:1},STAR_COST={s:100,p:100,w:100,z:150,e:150,o:150,t:150},SRV={first:0,now:0,at:0,unl:{}};
+var UNLOCK_DAY={c:1,d:2,s:5,p:7,w:7,z:45,e:60,o:75,t:90},STAR_ITEM={s:1,p:1,w:1,z:1,e:1,o:1,t:1},STAR_COST={s:100,p:100,w:100,z:150,e:150,o:150,t:150},SRV={first:0,now:0,at:0,unl:{}};
 if(!G.t0)G.t0=Date.now();
 function dayNum(){var base=SRV.first||G.t0||Date.now(),nowMs=SRV.first?SRV.now+(Date.now()-SRV.at):Date.now();return Math.max(1,Math.floor((nowMs-base)/86400000)+1)}
 var starBusy=false;
