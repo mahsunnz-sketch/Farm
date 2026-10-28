@@ -1,11 +1,13 @@
 import {
   json, tgApi, listPaid, listUnlocks, recordPaid, recordUnlock, price, unlockAmount, safeEqual,
-  MAX_EXTRA, UNLOCK_ITEMS, EARLY,
+  MAX_EXTRA, UNLOCK_ITEMS, EARLY, DEPOSITS, addStars,
 } from "../../src/lib/tg.js";
 
 // Faturadaki payload'ı çözer: farmer:<uid>  veya  unlock:<s|w|z|e|o|t>:<uid>
 function parsePayload(s) {
-  let m = /^farmer:(\d+)$/.exec(s || "");
+  let m = /^dep:(\d+):(\d+)$/.exec(s || "");
+  if (m && DEPOSITS.includes(parseInt(m[1], 10))) return { kind: "dep", amount: parseInt(m[1], 10), uid: m[2] };
+  m = /^farmer:(\d+)$/.exec(s || "");
   if (m) return { kind: "farmer", uid: m[1] };
   m = /^unlock:([a-zA-Z]):(\d+)$/.exec(s || "");
   if (m && Object.prototype.hasOwnProperty.call(UNLOCK_ITEMS, m[1])) return { kind: "unlock", item: m[1], uid: m[2] };
@@ -21,7 +23,7 @@ export async function onRequest({ request, env }) {
   }
   let u;
   try { u = await request.json(); } catch { return json({ ok: true }); }
-  const expect = async (pl) => (pl && pl.kind === "unlock" ? await unlockAmount(env, pl.uid, pl.item) : price(env));
+  const expect = async (pl) => (pl && pl.kind === "dep" ? pl.amount : pl && pl.kind === "unlock" ? await unlockAmount(env, pl.uid, pl.item) : price(env));
 
   // 1) Ödeme öncesi onay (10 saniye içinde cevaplanmalı)
   if (u.pre_checkout_query) {
@@ -49,7 +51,8 @@ export async function onRequest({ request, env }) {
     const pl = parsePayload(sp.invoice_payload);
     if (pl && sp.currency === "XTR" && sp.total_amount === (await expect(pl)) && String(u.message.from.id) === pl.uid) {
       try {
-        if (pl.kind === "farmer") await recordPaid(env, pl.uid, sp.telegram_payment_charge_id);
+        if (pl.kind === "dep") await addStars(env, pl.uid, pl.amount, sp.telegram_payment_charge_id);
+        else if (pl.kind === "farmer") await recordPaid(env, pl.uid, sp.telegram_payment_charge_id);
         else {
           await recordUnlock(env, pl.uid, pl.item, sp.telegram_payment_charge_id);
           if (EARLY[pl.item]) await recordUnlock(env, pl.uid, EARLY[pl.item], sp.telegram_payment_charge_id);
@@ -58,7 +61,9 @@ export async function onRequest({ request, env }) {
         return json({ error: "store" }, 500); // Telegram tekrar dener
       }
       try {
-        const text = pl.kind === "farmer"
+        const text = pl.kind === "dep"
+          ? `Teşekkürler! Bakiyene ${pl.amount} ⭐ eklendi 🎉`
+          : pl.kind === "farmer"
           ? "Teşekkürler! Yeni çiftçin tarlada işe başlıyor 🌾"
           : `Teşekkürler! ${UNLOCK_ITEMS[pl.item]} artık satın alınabilir 🎉`;
         await tgApi(env, "sendMessage", { chat_id: u.message.chat.id, text });

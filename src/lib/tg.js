@@ -80,6 +80,8 @@ async function init(env) {
     env.DB.prepare("CREATE INDEX IF NOT EXISTS farmers_uid ON farmers(uid)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS unlocks (uid TEXT NOT NULL, item TEXT NOT NULL, charge TEXT, at INTEGER NOT NULL, PRIMARY KEY (uid, item))"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, first INTEGER NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet (uid TEXT PRIMARY KEY, stars INTEGER NOT NULL DEFAULT 0)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet_log (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, delta INTEGER NOT NULL, at INTEGER NOT NULL)"),
   ]);
   ready = true;
 }
@@ -116,4 +118,35 @@ export async function firstSeen(env, uid) {
   await env.DB.prepare("INSERT OR IGNORE INTO users (uid, first) VALUES (?, ?)").bind(String(uid), Date.now()).run();
   const row = await env.DB.prepare("SELECT first FROM users WHERE uid = ?").bind(String(uid)).first();
   return row ? row.first : Date.now();
+}
+
+// --- Yıldız cüzdanı: oyuncu Yıldız yükler, oyundaki Yıldızlı alımlar buradan düşer ---
+export const DEPOSITS = [100, 200, 300, 400, 500, 1000];
+export async function getStars(env, uid) {
+  await init(env);
+  const row = await env.DB.prepare("SELECT stars FROM wallet WHERE uid = ?").bind(String(uid)).first();
+  return row ? row.stars : 0;
+}
+// Aynı ödeme iki kez yazılmasın diye charge benzersiz tutulur.
+export async function addStars(env, uid, amount, charge) {
+  await init(env);
+  const r = await env.DB.prepare("INSERT OR IGNORE INTO wallet_log (charge, uid, delta, at) VALUES (?, ?, ?, ?)")
+    .bind(String(charge), String(uid), amount, Date.now()).run();
+  if (!r.meta || !r.meta.changes) return false;
+  await env.DB.prepare("INSERT INTO wallet (uid, stars) VALUES (?, ?) ON CONFLICT(uid) DO UPDATE SET stars = stars + excluded.stars")
+    .bind(String(uid), amount).run();
+  return true;
+}
+// Yetiyorsa düşer (tek adımda, çift harcama olmaz).
+export async function spendStars(env, uid, amount, charge) {
+  await init(env);
+  const r = await env.DB.prepare("UPDATE wallet SET stars = stars - ?1 WHERE uid = ?2 AND stars >= ?1").bind(amount, String(uid)).run();
+  if (!r.meta || !r.meta.changes) return false;
+  await env.DB.prepare("INSERT OR IGNORE INTO wallet_log (charge, uid, delta, at) VALUES (?, ?, ?, ?)")
+    .bind(String(charge), String(uid), -amount, Date.now()).run();
+  return true;
+}
+export async function refundStars(env, uid, amount) {
+  await init(env);
+  await env.DB.prepare("UPDATE wallet SET stars = stars + ? WHERE uid = ?").bind(amount, String(uid)).run();
 }

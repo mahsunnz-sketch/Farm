@@ -2242,8 +2242,8 @@ function starEarly(k){
   function end(){starBusy=false}
   starPost('/api/invoice',{initData:TGW.initData,item:K}).then(function(r){
     if(r.status===409){starSync().then(function(){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k)});return}
-    if(r.status!==200||!r.j||!r.j.link){end();toast('Satın alma şu an kullanılamıyor.'+errTag(r));SND.err();return}
-    TGW.openInvoice(r.j.link,function(st){
+    if(r.status!==200||!r.j||!(r.j.link||r.j.paid)){end();toast('Satın alma şu an kullanılamıyor.'+errTag(r));SND.err();return}
+    openInv(r,function(st){
       if(st==='paid'){var n=0;toast('Ödeme alındı...');
         (function poll(){starSync().then(function(){
           if(SRV.unl[K]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast('Erken açıldı! Altının yetince '+d.name+' alabilirsin.')}
@@ -2258,8 +2258,8 @@ function starUnlock(k){
   function end(){starBusy=false}
   starPost('/api/invoice',{initData:TGW.initData,item:k}).then(function(r){
     if(r.status===409){starSync().then(function(){end();if(SRV.unl[k])buyAnimalDo(k)});return}
-    if(r.status!==200||!r.j||!r.j.link){end();toast('Satın alma şu an kullanılamıyor.'+errTag(r));SND.err();return}
-    TGW.openInvoice(r.j.link,function(st){
+    if(r.status!==200||!r.j||!(r.j.link||r.j.paid)){end();toast('Satın alma şu an kullanılamıyor.'+errTag(r));SND.err();return}
+    openInv(r,function(st){
       if(st==='paid'){var n=0;toast('Ödeme alındı...');
         (function poll(){starSync().then(function(){
           if(SRV.unl[k]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast('Yıldız ödendi! Altının yetince '+d.name+' alabilirsin.')}
@@ -2305,7 +2305,7 @@ cv.addEventListener('click',function(ev){
 
 /* ---------- pencereler ---------- */
 var modalOpen=null;
-function openModal(name){modalOpen=name;renderModal();$('modal').classList.add('on')}
+function openModal(name){modalOpen=name;renderModal();$('modal').classList.add('on');if(name==='pay'&&TGW&&TGW.initData){var b0=SRV.stars;starSync().then(function(){if(modalOpen==='pay'&&SRV.stars!==b0)renderModal()})}}
 function closeModal(){modalOpen=null;$('modal').classList.remove('on')}
 var resetArm=false;
 function head(t){return'<div class="phead"><h2>'+t+'</h2><button class="btn red x" data-x="1" aria-label="Kapat">×</button></div>'}
@@ -2363,13 +2363,30 @@ function renderModal(){
     h+='<button class="btn red" style="height:44px;font-size:18px" data-reset="1">'+(resetArm?'Emin misin? Tekrar dokun':'Oyunu sıfırla')+'</button>';
     h+='<div class="note">İlerleme bu cihazda otomatik kaydedilir.</div>';
   }else{
-    var info={friends:['Arkadaşlar','Arkadaşlarının çiftliklerini ziyaret etme özelliği çok yakında.'],pay:['Ödeme','Bu sürümde gerçek para ile satın alma yok. Altın ve nakit oynayarak kazanılır.'],games:['Oyunlar','Yeni mini oyunlar çok yakında.']}[n];
+    if(n==='pay'){
+    h=head('Ödeme');
+    h+='<div class="seg"><button class="btn '+(payTab==='in'?'gold':'blue')+'" data-ptab="in">Ödeme yap</button><button class="btn '+(payTab==='out'?'gold':'blue')+'" data-ptab="out">Ödeme al</button></div>';
+    if(payTab==='in'){
+      h+='<div class="item"><div class="tx"><b>Bakiyen: '+fmtN(SRV.stars||0)+' ⭐</b><small>Yüklediğin Yıldızlar oyundaki Yıldızlı alımlarda otomatik kullanılır.</small></div></div>';
+      if(TGW&&TGW.openInvoice){
+        h+='<div class="seg" style="flex-wrap:wrap">'+DEPS.map(function(a){return '<button class="btn gold" data-dep="'+a+'" style="flex:1 1 30%;height:44px;font-size:18px">⭐ '+a+'</button>'}).join('')+'</div>';
+        h+='<div class="hst" id="hSt" style="color:#f6e3b8"></div>';
+        h+='<button class="btn blue" data-star="check" style="height:40px;font-size:16px">Bakiyemi kontrol et</button>';
+        h+='<div class="note">Ödeme Telegram üzerinden güvenle yapılır.</div>';
+      }else h+='<div class="note" style="font-size:16px;padding:8px 4px">Yıldız yükleme yalnızca Telegram içinde yapılır. Oyunu botun bağlantısından aç.</div>';
+    }else{
+      var left=Math.max(0,31-dayNum());
+      h+='<div class="item"><div class="tx"><b>'+(left>0?'🔒 Ödeme alma kilitli':'Ödeme alma')+'</b><small>'+(left>0?left+' gün sonra açılır':'Çok yakında')+'</small><div class="bar"><i style="width:'+Math.min(100,Math.max(0,(dayNum()-1)/30*100))+'%"></i></div></div></div>';
+      h+='<div class="note">Ödeme alma, oynamaya başladıktan 30 gün sonra açılır.</div>';
+    }
+    }else{
+    var info={friends:['Arkadaşlar','Arkadaşlarının çiftliklerini ziyaret etme özelliği çok yakında.'],games:['Oyunlar','Yeni mini oyunlar çok yakında.']}[n];
     h=head(info[0])+'<div class="note" style="font-size:16px;padding:8px 4px">'+info[1]+'</div>';
-  }
+  }}
   p.innerHTML=h;injectIcons(p);
   if(n==='hire'){try{var qe=$('qr');if(qe&&window.QRCode){qe.innerHTML='';new QRCode(qe,{text:PAY_ADDR,width:106,height:106,colorDark:'#2a1608',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});qe.style.display='block'}}catch(e){}}
 }
-var UNLOCK_DAY={c:1,d:2,s:5,p:8,w:8,z:45,e:60,o:75,t:90},STAR_ITEM={s:1,p:1,w:1,z:1,e:1,o:1,t:1},STAR_COST={s:100,p:100,w:100,z:150,e:150,o:150,t:150},SRV={first:0,now:0,at:0,unl:{}};
+var UNLOCK_DAY={c:1,d:2,s:5,p:8,w:8,z:45,e:60,o:75,t:90},STAR_ITEM={s:1,p:1,w:1,z:1,e:1,o:1,t:1},STAR_COST={s:100,p:100,w:100,z:150,e:150,o:150,t:150},SRV={first:0,now:0,at:0,unl:{},stars:0};
 if(!G.t0)G.t0=Date.now();
 function dayNum(){var base=SRV.first||G.t0||Date.now(),nowMs=SRV.first?SRV.now+(Date.now()-SRV.at):Date.now();return Math.max(1,Math.floor((nowMs-base)/86400000)+1)}
 var starBusy=false;
@@ -2387,17 +2404,32 @@ function starSync(){
   return starPost('/api/status',{initData:TGW.initData}).then(function(r){
     if(r.status!==200)return 0;
     if(r.j.firstSeen){SRV.first=r.j.firstSeen;SRV.now=r.j.now;SRV.at=Date.now()}
-    SRV.unl=r.j.unlocks||{};
+    SRV.unl=r.j.unlocks||{};SRV.stars=r.j.stars||0;
     var a=starApply(r.j.charges);refreshUI();return a}).catch(function(){return 0});
 }
 function errTag(r){try{return ' (hata '+r.status+': '+((r.j&&(r.j.error+(r.j.detail?' - '+r.j.detail:'')))||'yanıt yok')+')'}catch(e){return ''}}
+function openInv(r,cb){if(r.j&&r.j.paid){SRV.stars=r.j.stars||0;setTimeout(function(){cb('paid')},0);return}TGW.openInvoice(r.j.link,cb)}
+var payTab='in',DEPS=[100,200,300,400,500,1000];
+function starDeposit(amt){
+  if(starBusy)return;starBusy=true;hMsg('Ödeme ekranı hazırlanıyor...',true);
+  function done(){starBusy=false}
+  var before=SRV.stars||0;
+  starPost('/api/invoice',{initData:TGW.initData,item:'D'+amt}).then(function(r){
+    if(r.status!==200||!r.j||!r.j.link){done();hMsg('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.'+errTag(r),false);SND.err();return}
+    TGW.openInvoice(r.j.link,function(st){
+      if(st==='paid'){hMsg('Ödeme alındı...',true);var n=0;
+        (function poll(){starSync().then(function(){if((SRV.stars||0)>before){done();renderModal();hMsg('Bakiyene eklendi: +'+amt+' ⭐',true);SND.fanfare()}else if(++n>=10){done();hMsg('Ödeme alındı ama henüz görünmedi. Biraz sonra tekrar dene.',false)}else setTimeout(poll,1500)})})();
+      }else{done();hMsg(st==='cancelled'?'Ödeme iptal edildi.':st==='failed'?'Ödeme başarısız oldu.':'Ödeme bekleniyor...',st==='pending')}
+    });
+  }).catch(function(){done();hMsg('Bağlantı hatası. İnternetini kontrol et.',false)});
+}
 function starBuy(){
   if(starBusy)return;starBusy=true;hMsg('Ödeme ekranı hazırlanıyor...',true);
   function done(){starBusy=false}
   starPost('/api/invoice',{initData:TGW.initData}).then(function(r){
     if(r.status===409){done();hMsg('Tüm çiftçiler zaten alındı.',false);starSync();return}
-    if(r.status!==200||!r.j||!r.j.link){done();hMsg('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.'+errTag(r),false);SND.err();return}
-    TGW.openInvoice(r.j.link,function(st){
+    if(r.status!==200||!r.j||!(r.j.link||r.j.paid)){done();hMsg('Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.'+errTag(r),false);SND.err();return}
+    openInv(r,function(st){
       if(st==='paid'){
         hMsg('Ödeme alındı, çiftçin geliyor...',true);var n=0;
         (function poll(){starSync().then(function(a){if(a||++n>=10){done();if(!a)hMsg('Ödeme alındı ama çiftçi henüz görünmedi. Birazdan "Ödememi kontrol et"e dokun.',false)}else setTimeout(poll,1500)})})();
@@ -2454,8 +2486,10 @@ $('panel').addEventListener('click',function(ev){
   if(t.dataset.copy){var inp=$(t.dataset.copy);hCopy(inp,inp.value);return}
   if(t.dataset.notify){var tx=($('hTx').value||'').trim();hCopy(null,'Çiftlik Vadisi ödeme | Kimlik: '+PAY.pid+' | Tutar: '+PAY_AMT+' TRX | Adres: '+PAY_ADDR+(tx?' | TXID: '+tx:''));return}
   if(t.dataset.redeem){redeemCode($('hCode').value);return}
+  if(t.dataset.ptab){payTab=t.dataset.ptab;renderModal();return}
+  if(t.dataset.dep){starDeposit(parseInt(t.dataset.dep,10));return}
   if(t.dataset.star==='buy'){starBuy();return}
-  if(t.dataset.star==='check'){hMsg('Kontrol ediliyor...',true);starSync().then(function(a){if(!a)hMsg('Yeni ödeme bulunamadı.',false)});return}
+  if(t.dataset.star==='check'){hMsg('Kontrol ediliyor...',true);starSync().then(function(a){if(modalOpen==='pay'){renderModal();hMsg('Bakiyen: '+fmtN(SRV.stars||0)+' ⭐',true)}else if(!a)hMsg('Yeni ödeme bulunamadı.',false)});return}
   if(t.dataset.snd){G.sound=!G.sound;save();renderModal();return}
   if(t.dataset.mus){G.music=!wantMusic();if(G.music)startMusic();else stopMusic();save();renderModal();return}
   if(t.dataset.reset){if(!resetArm){resetArm=true;renderModal();setTimeout(function(){resetArm=false;if(modalOpen==='settings')renderModal()},4000);return}
