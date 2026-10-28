@@ -2149,11 +2149,11 @@ function refreshUI(){
     var n=cnt(d.k),t=$('t_'+d.k),p=$('p_'+d.k),b=$('b_'+d.k),cs=aCost(d);
     if(n>=d.max){t.textContent=d.name+' '+n+'/'+d.max;p.textContent='Dolu';b.classList.add('off')}
     else{
-      var lock=dayNum()<UNLOCK_DAY[d.k],needStar=!!(STAR_ITEM[d.k]&&!SRV.unl[d.k]&&n===0);
+      var early=!!SRV.unl[d.k.toUpperCase()],lock=dayNum()<UNLOCK_DAY[d.k]&&!early,canEarly=lock&&!!d.big&&!!(TGW&&TGW.openInvoice&&TGW.initData),needStar=!!(STAR_ITEM[d.k]&&!SRV.unl[d.k]&&n===0);
       t.textContent=lock?'Kilitli · Gün '+UNLOCK_DAY[d.k]:(n>0?d.name+' '+n+'/'+d.max:'Satılık');
       {p.innerHTML=fmtN(cs)+' <span class="ico" style="width:17px;height:17px" data-i="coin"></span>';injectIcons(p)}
-      var bl=(needStar&&!lock)?'Al +'+STAR_COST[d.k]+'⭐':'Al';if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=(needStar&&!lock)?'15px':'19px'}
-      b.classList.toggle('off',lock||G.coins<cs)}
+      var bl=canEarly?'Erken '+earlyPrice(d.k)+'⭐':((needStar&&!lock)?'Al +'+STAR_COST[d.k]+'⭐':'Al');if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=(canEarly||(needStar&&!lock))?'15px':'19px'}
+      b.classList.toggle('off',(lock&&!canEarly)||G.coins<cs)}
   });
   $('bHire').style.filter=maxF?'grayscale(.7) brightness(.85)':'none';
   var claimable=questList().some(function(q){return !G.q[q.id]&&q.cur>=q.goal});$('dotQ').classList.toggle('on',claimable);
@@ -2166,12 +2166,30 @@ function buyFarmer(){
 function animalSound(k,v){if(k==='c')SND.cluck(v);else if(k==='d')SND.quack();else if(k==='s')SND.baa(v);else if(k==='p')SND.buzz();else if(k==='z')SND.oink();else if(k==='e')SND.baa(1.35);else if(k==='o')SND.honk();else if(k==='t')SND.gobble();else SND.moo()}
 function buyAnimal(k){
   var d=DEF[k],n=cnt(k);if(n>=d.max)return;
-  var day=dayNum();if(day<UNLOCK_DAY[k]){toast(d.name+' '+UNLOCK_DAY[k]+'. günde açılır (şu an '+day+'. gün).');SND.err();return}
+  var day=dayNum();if(day<UNLOCK_DAY[k]&&!SRV.unl[k.toUpperCase()]){if(d.big&&TGW&&TGW.openInvoice&&TGW.initData){var c0=aCost(d);if(G.coins<c0){toast('Önce '+fmtN(c0)+' altın gerekli.');SND.err();return}starEarly(k);return}toast(d.name+' '+UNLOCK_DAY[k]+'. günde açılır (şu an '+day+'. gün).');SND.err();return}
   var c=aCost(d);if(G.coins<c){toast('Yetersiz altın: '+fmtN(c)+' gerekli.');SND.err();return}
   if(STAR_ITEM[k]&&!SRV.unl[k]&&n===0){
     if(!(TGW&&TGW.openInvoice&&TGW.initData)){toast(d.name+' yalnızca Telegram içinde '+STAR_COST[k]+' ⭐ ile açılır.');SND.err();return}
     starUnlock(k);return}
   buyAnimalDo(k);
+}
+var EARLY_AMT=200,EARLY_DIFF=50;
+function earlyPrice(k){return SRV.unl[k]?EARLY_DIFF:EARLY_AMT}
+function starEarly(k){
+  if(starBusy)return;starBusy=true;var d=DEF[k],K=k.toUpperCase();toast('Ödeme ekranı hazırlanıyor...');
+  function end(){starBusy=false}
+  starPost('/api/invoice',{initData:TGW.initData,item:K}).then(function(r){
+    if(r.status===409){starSync().then(function(){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k)});return}
+    if(r.status!==200||!r.j||!r.j.link){end();toast('Satın alma şu an kullanılamıyor.'+errTag(r));SND.err();return}
+    TGW.openInvoice(r.j.link,function(st){
+      if(st==='paid'){var n=0;toast('Ödeme alındı...');
+        (function poll(){starSync().then(function(){
+          if(SRV.unl[K]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast('Erken açıldı! Altının yetince '+d.name+' alabilirsin.')}
+          else if(++n>=10){end();toast('Ödeme alındı ama henüz görünmedi. Biraz sonra tekrar dene.')}
+          else setTimeout(poll,1500)})})();
+      }else{end();toast(st==='cancelled'?'Ödeme iptal edildi.':st==='failed'?'Ödeme başarısız oldu.':'Ödeme bekleniyor...')}
+    });
+  }).catch(function(){end();toast('Bağlantı hatası. İnternetini kontrol et.')});
 }
 function starUnlock(k){
   if(starBusy)return;starBusy=true;var d=DEF[k];toast('Ödeme ekranı hazırlanıyor...');
@@ -2237,7 +2255,7 @@ function renderModal(){
       {k:'yield',ic:'wheat',name:'Bol Hasat',d:'Hasat başına '+yieldPer()+' → '+(yieldPer()+1)+' buğday',b:100,m:1.7,max:9},
       {k:'speed',ic:'shovel',name:'Hızlı Büyüme',d:'Büyüme süresi '+growTime().toFixed(1)+' sn',b:120,m:1.7,max:8},
       {k:'price',ic:'cash',name:'Pazar Pazarlığı',d:'Buğday fiyatı '+sellPrice()+' → '+(sellPrice()+1)+' nakit',b:150,m:1.8,max:12},
-      {k:'cap',ic:'barn',name:'Büyük Depo',d:'Kapasite '+fmtN(capacity())+' → '+fmtN(capacity()+1000),b:200,m:1.8,max:20}
+      {k:'cap',ic:'barn',name:'Büyük Depo',d:'Kapasite '+fmtN(capacity())+' → '+fmtN(capacity()+1000),b:200,m:1.8,max:8}
     ];
     h=head('Market');
     ups.forEach(function(u){var lv=G.up[u.k],c=cost(u.b,u.m,lv),mx=lv>=u.max;

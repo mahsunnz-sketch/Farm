@@ -1,7 +1,7 @@
 // Cloudflare Pages Functions için ortak yardımcılar (D1 veritabanı + Telegram)
 
 export const MAX_EXTRA = 3; // 1 ücretsiz + 3 ödemeli = 4 çiftçi
-export const UNLOCK_ITEMS = { s: "Koyun", w: "İnek", z: "Domuz", e: "Keçi", o: "Kaz", t: "Hindi" }; // Yıldızla açılan hayvanlar
+export const UNLOCK_ITEMS = { s: "Koyun", w: "İnek", z: "Domuz", e: "Keçi", o: "Kaz", t: "Hindi", Z: "Domuz", E: "Keçi", O: "Kaz", T: "Hindi" }; // Yıldızla açılan hayvanlar
 export const UNLOCK_PRICE = { s: 100, w: 100, z: 150, e: 150, o: 150, t: 150 }; // Yıldız fiyatları
 
 export function price(env) {
@@ -9,7 +9,16 @@ export function price(env) {
   return Number.isFinite(p) && p > 0 ? p : 100;
 }
 
+export const EARLY = { Z: "z", E: "e", O: "o", T: "t" }; // erken açılış (gün şartını atlar)
 export function unlockPrice(item) { return UNLOCK_PRICE[item] || 100; }
+// Erken açılış: 200 Yıldız; normal 150 Yıldızı daha önce ödediyse sadece 50 fark.
+export async function unlockAmount(env, uid, item) {
+  if (EARLY[item]) {
+    const have = await listUnlocks(env, uid);
+    return have[EARLY[item]] ? 50 : 200;
+  }
+  return unlockPrice(item);
+}
 
 export const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {

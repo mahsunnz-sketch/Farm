@@ -1,4 +1,4 @@
-import { json, verifyInitData, tgApi, listPaid, listUnlocks, price, unlockPrice, MAX_EXTRA, UNLOCK_ITEMS } from "../../src/lib/tg.js";
+import { json, verifyInitData, tgApi, listPaid, listUnlocks, price, unlockAmount, EARLY, MAX_EXTRA, UNLOCK_ITEMS } from "../../src/lib/tg.js";
 
 export async function onRequest({ request, env }) {
   if (request.method !== "POST") return json({ error: "method" }, 405);
@@ -19,10 +19,10 @@ export async function onRequest({ request, env }) {
   } else if (Object.prototype.hasOwnProperty.call(UNLOCK_ITEMS, item)) {
     const have = await listUnlocks(env, user.id);
     if (have[item]) return json({ error: "owned" }, 409);
-    title = `${UNLOCK_ITEMS[item]} kilidi`;
+    title = EARLY[item] ? `${UNLOCK_ITEMS[item]} erken açılış` : `${UNLOCK_ITEMS[item]} kilidi`;
     description = `Çiftlik Vadisi: ${UNLOCK_ITEMS[item]} satın alma hakkı`;
     payload = `unlock:${item}:${user.id}`;
-    amount = unlockPrice(item);
+    amount = await unlockAmount(env, user.id, item);
   } else {
     return json({ error: "bad_item" }, 400);
   }
