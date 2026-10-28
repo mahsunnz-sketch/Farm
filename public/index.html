@@ -702,7 +702,8 @@ function cloudQueue(){
 if(G.farmers<1+PAY.paid.length)G.farmers=Math.min(MAXF,1+PAY.paid.length);
 var yieldPer=function(){return 1+G.up.yield};
 var growTime=function(){return 18*Math.pow(.88,G.up.speed)};
-var sellPrice=function(){return 2.5+G.up.price};
+var sellPrice=function(lv){if(lv==null)lv=G.up.price;return Math.round((1.3+.15*lv)*100)/100};
+var fmtP=function(x){return String(Number(x.toFixed(2))).replace('.',',')};
 var capacity=function(){return 1000+G.up.cap*1000};
 function cost(b,m,l){return Math.round(b*Math.pow(m,l)/5)*5}
 var hireCost=function(){return cost(150,1.9,G.farmers-1)};
@@ -2256,7 +2257,7 @@ function renderModal(){
     var ups=[
       {k:'yield',ic:'wheat',name:'Bol Hasat',d:'Hasat başına '+yieldPer()+' → '+(yieldPer()+1)+' buğday',b:100,m:1.7,max:9},
       {k:'speed',ic:'shovel',name:'Hızlı Büyüme',d:'Büyüme süresi '+growTime().toFixed(1)+' sn',b:120,m:1.7,max:8},
-      {k:'price',ic:'cash',name:'Pazar Pazarlığı',d:'Buğday fiyatı '+sellPrice()+' → '+(sellPrice()+1)+' nakit',b:150,m:1.8,max:8},
+      {k:'price',ic:'cash',name:'Pazar Pazarlığı',d:'Buğday fiyatı '+fmtP(sellPrice())+' → '+fmtP(sellPrice(G.up.price+1))+' nakit',b:150,m:1.8,max:8},
       {k:'cap',ic:'barn',name:'Büyük Depo',d:'Kapasite '+fmtN(capacity())+' → '+fmtN(capacity()+1000),b:200,m:1.8,max:8}
     ];
     h=head('Market');
