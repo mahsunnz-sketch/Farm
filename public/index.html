@@ -634,7 +634,7 @@ function buildBG(){
     // bölüm tabelası
       [40,148].forEach(function(x){rr(c,x-5,1404,10,48,2);c.fillStyle=lg(c,x-5,0,x+5,0,[[0,'#b57a45'],[1,'#6f4426']]);c.fill();c.lineWidth=2;c.strokeStyle='#3a2112';c.stroke()});
       rr(c,44,1408,100,28,8);c.fillStyle=lg(c,0,1408,0,1436,[[0,'#d09a62'],[1,'#8a5a32']]);c.fill();c.lineWidth=2.4;c.strokeStyle='#3a2112';c.stroke();
-      c.font='15px "Lilita One","Trebuchet MS",sans-serif';c.textAlign='center';c.textBaseline='middle';c.lineWidth=4;c.lineJoin='round';c.strokeStyle='#3a2112';c.strokeText('Büyük Çiftlik',94,1423);c.fillStyle='#fff4e0';c.fillText('Büyük Çiftlik',94,1423);c.textBaseline='alphabetic';
+      c.font='15px "Lilita One","Trebuchet MS",sans-serif';c.textAlign='center';c.textBaseline='middle';c.lineWidth=4;c.lineJoin='round';c.strokeStyle='#3a2112';c.strokeText(L('Büyük Çiftlik'),94,1423,88);c.fillStyle='#fff4e0';c.fillText(L('Büyük Çiftlik'),94,1423,88);c.textBaseline='alphabetic';
     })();
     // ambar tabela ipleri
     c.fillStyle='#4a2c16';c.fillRect(322,244,4,8);c.fillRect(404,244,4,8);
@@ -746,6 +746,237 @@ var henCost=function(){return cost(250,1.7,G.chickens)};
 var sheepCost=function(){return cost(1200,1.8,G.sheep)};
 function fmt(n){return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
 function fmtN(n){return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')}
+
+/* ---------- çoklu dil (i18n) ---------- */
+var LANGS=[['tr','Türkçe'],['en','English'],['ru','Русский'],['id','Bahasa Indonesia'],['az','Azərbaycanca'],['ar','العربية'],['es','Español'],['de','Deutsch'],['fr','Français'],['pt','Português']];
+var LANG=null,I18N={},I18R=null;
+// satır: [Türkçe, en, ru, id, az, ar, es, de, fr, pt]   (# = sayı yer tutucusu)
+var I18ROWS=[
+// --- arayüz ---
+['Market','Market','Рынок','Pasar','Market','السوق','Mercado','Markt','Marché','Mercado'],
+['Çiftlik','Farm','Ферма','Peternakan','Ferma','المزرعة','Granja','Farm','Ferme','Fazenda'],
+['Görevler','Quests','Задания','Misi','Tapşırıqlar','المهام','Misiones','Aufgaben','Quêtes','Missões'],
+['Arkadaşlar','Friends','Друзья','Teman','Dostlar','الأصدقاء','Amigos','Freunde','Amis','Amigos'],
+['Ödeme','Payment','Оплата','Pembayaran','Ödəniş','الدفع','Pago','Zahlung','Paiement','Pagamento'],
+['Oyunlar','Games','Игры','Game','Oyunlar','الألعاب','Juegos','Spiele','Jeux','Jogos'],
+['Sat','Sell','Продать','Jual','Sat','بيع','Vender','Verkaufen','Vendre','Vender'],
+['Depo','Barn','Склад','Gudang','Anbar','المخزن','Almacén','Lager','Grenier','Armazém'],
+['İstatistikler','Statistics','Статистика','Statistik','Statistika','الإحصائيات','Estadísticas','Statistik','Statistiques','Estatísticas'],
+['Hesap','Statistics','Статистика','Statistik','Statistika','الإحصائيات','Estadísticas','Statistik','Statistiques','Estatísticas'],
+['Ayarlar','Settings','Настройки','Pengaturan','Ayarlar','الإعدادات','Ajustes','Einstellungen','Réglages','Configurações'],
+['Tam ekran','Fullscreen','Полный экран','Layar penuh','Tam ekran','ملء الشاشة','Pantalla completa','Vollbild','Plein écran','Tela cheia'],
+['Çiftçi tut','Hire farmer','Нанять фермера','Sewa petani','Fermer tut','استأجر مزارعًا','Contratar granjero','Bauer anheuern','Embaucher un fermier','Contratar fazendeiro'],
+['Çiftçi Al','Get a farmer','Получить фермера','Dapatkan petani','Fermer al','احصل على مزارع','Obtener granjero','Bauer holen','Obtenir un fermier','Obter fazendeiro'],
+['Çiftçiler','Farmers','Фермеры','Petani','Fermerlər','المزارعون','Granjeros','Bauern','Fermiers','Fazendeiros'],
+['Çiftçi','Farmer','Фермер','Petani','Fermer','مزارع','Granjero','Bauer','Fermier','Fazendeiro'],
+['Kapat','Close','Закрыть','Tutup','Bağla','إغلاق','Cerrar','Schließen','Fermer','Fechar'],
+['Dolu','Full','Полно','Penuh','Dolu','ممتلئ','Lleno','Voll','Complet','Cheio'],
+['Kilitli','Locked','Закрыто','Terkunci','Kilidli','مقفل','Bloqueado','Gesperrt','Verrouillé','Bloqueado'],
+['Gün','Day','День','Hari','Gün','يوم','Día','Tag','Jour','Dia'],
+['gün','days','дн.','hari','gün','يومًا','días','Tage','jours','dias'],
+['Satılık','For sale','Продажа','Dijual','Satılır','للبيع','En venta','Verkauf','À vendre','À venda'],
+['Al','Buy','Купить','Beli','Al','شراء','Comprar','Kaufen','Acheter','Comprar'],
+['Erken','Early','Раньше','Awal','Erkən','مبكرًا','Antes','Früh','Tôt','Cedo'],
+['dk','min','мин','mnt','dəq','د','min','Min','min','min'],
+['sa','h','ч','j','saat','س','h','Std','h','h'],
+['sn','s','с','dtk','san','ث','s','s','s','s'],
+['Sv.','Lv.','Ур.','Lv.','Sv.','م.','Nv.','St.','Niv.','Nv.'],
+['hata','error','ошибка','galat','xəta','خطأ','error','Fehler','erreur','erro'],
+['yanıt yok','no response','нет ответа','tidak ada respons','cavab yoxdur','لا يوجد رد','sin respuesta','keine Antwort','pas de réponse','sem resposta'],
+['buğday','wheat','пшеницы','gandum','buğda','قمح','trigo','Weizen','blé','trigo'],
+['Buğday','Wheat','Пшеница','Gandum','Buğda','القمح','Trigo','Weizen','Blé','Trigo'],
+['nakit','cash','наличных','uang tunai','nağd','نقد','efectivo','Bargeld','argent','dinheiro'],
+['altın','gold','золота','emas','qızıl','ذهب','oro','Gold','or','ouro'],
+['Yokken','While away','Пока вас не было','Saat pergi','Yoxkən','أثناء غيابك','Mientras no estabas','Während du weg warst','Pendant ton absence','Enquanto estava fora'],
+['Depo dolu','Barn full','Склад полон','Gudang penuh','Anbar dolu','المخزن ممتلئ','Almacén lleno','Lager voll','Grenier plein','Armazém cheio'],
+['Efekt','Sound','Звуки','Efek','Effekt','المؤثرات','Efectos','Effekte','Effets','Efeitos'],
+['Müzik','Music','Музыка','Musik','Musiqi','الموسيقى','Música','Musik','Musique','Música'],
+['Açık','On','Вкл','Hidup','Açıq','تشغيل','Sí','An','Oui','Ligado'],
+['Kapalı','Off','Выкл','Mati','Bağlı','إيقاف','No','Aus','Non','Desligado'],
+['Dil','Language','Язык','Bahasa','Dil','اللغة','Idioma','Sprache','Langue','Idioma'],
+['Alındı','Claimed','Получено','Diambil','Alındı','تم الاستلام','Reclamado','Abgeholt','Réclamé','Resgatado'],
+// --- hayvanlar ---
+['Tavuk','Chicken','Курица','Ayam','Toyuq','دجاجة','Gallina','Huhn','Poule','Galinha'],
+['Ördek','Duck','Утка','Bebek','Ördək','بطة','Pato','Ente','Canard','Pato'],
+['Koyun','Sheep','Овца','Domba','Qoyun','خروف','Oveja','Schaf','Mouton','Ovelha'],
+['Kovan','Beehive','Улей','Sarang lebah','Pətək','خلية نحل','Colmena','Bienenstock','Ruche','Colmeia'],
+['İnek','Cow','Корова','Sapi','İnək','بقرة','Vaca','Kuh','Vache','Vaca'],
+['Domuz','Pig','Свинья','Babi','Donuz','خنزير','Cerdo','Schwein','Cochon','Porco'],
+['Keçi','Goat','Коза','Kambing','Keçi','ماعز','Cabra','Ziege','Chèvre','Cabra'],
+['Kaz','Goose','Гусь','Angsa','Qaz','إوزة','Ganso','Gans','Oie','Ganso'],
+['Hindi','Turkey','Индюк','Kalkun','Hind','ديك رومي','Pavo','Truthahn','Dinde','Peru'],
+['Gıt gıt!','Cluck cluck!','Ко-ко!','Kok kok!','Qət qət!','قاق قاق!','¡Coc coc!','Gack gack!','Cot cot !','Có có!'],
+['Vak vak!','Quack quack!','Кря-кря!','Kwek kwek!','Vak vak!','بط بط!','¡Cuac cuac!','Quak quak!','Coin coin !','Quá quá!'],
+['Mee!','Baa!','Бе-е!','Mbee!','Mee!','ماء!','¡Beee!','Mäh!','Bêê !','Méé!'],
+['Möö!','Moo!','Му-у!','Mooo!','Möö!','موو!','¡Muuu!','Muh!','Meuh !','Muuu!'],
+['Hruf hruf!','Oink oink!','Хрю-хрю!','Ngok ngok!','Xor xor!','غرر غرر!','¡Oinc oinc!','Grunz grunz!','Groin groin !','Oinc oinc!'],
+['Meee!','Meh-eh!','Ме-е-е!','Mbeee!','Meee!','ماااع!','¡Meee!','Mäh-äh!','Mééé !','Méééé!'],
+['Vonk vonk!','Honk honk!','Га-га!','Honk honk!','Qaq qaq!','هونك هونك!','¡Honk honk!','Schnatter!','Coin coin !','Honk honk!'],
+['Glu glu glu!','Gobble gobble!','Бул-бул!','Glu glu glu!','Qurr qurr!','قلو قلو!','¡Glu glu glu!','Kollerkoller!','Glou glou !','Glu glu glu!'],
+['Yumurtalarına dokun.','Tap their eggs.','Нажми на яйца.','Ketuk telurnya.','Yumurtalarına toxun.','المس بيضها.','Toca sus huevos.','Tippe auf die Eier.','Touche les œufs.','Toque nos ovos.'],
+['Yünlerine dokun.','Tap their wool.','Нажми на шерсть.','Ketuk wolnya.','Yunlarına toxun.','المس صوفها.','Toca su lana.','Tippe auf die Wolle.','Touche la laine.','Toque na lã.'],
+['Ballarına dokun.','Tap their honey.','Нажми на мёд.','Ketuk madunya.','Ballarına toxun.','المس عسلها.','Toca su miel.','Tippe auf den Honig.','Touche le miel.','Toque no mel.'],
+['Sütlerine dokun.','Tap their milk.','Нажми на молоко.','Ketuk susunya.','Südlərinə toxun.','المس حليبها.','Toca su leche.','Tippe auf die Milch.','Touche le lait.','Toque no leite.'],
+['Mantarlarına dokun.','Tap their truffles.','Нажми на трюфели.','Ketuk trufelnya.','Göbələklərinə toxun.','المس الكمأة.','Toca sus trufas.','Tippe auf die Trüffel.','Touche les truffes.','Toque nas trufas.'],
+['Peynirlerine dokun.','Tap their cheese.','Нажми на сыр.','Ketuk kejunya.','Pendirlərinə toxun.','المس جبنها.','Toca su queso.','Tippe auf den Käse.','Touche le fromage.','Toque no queijo.'],
+['Tüylerine dokun.','Tap their feathers.','Нажми на перья.','Ketuk bulunya.','Lələklərinə toxun.','المس ريشها.','Toca sus plumas.','Tippe auf die Federn.','Touche les plumes.','Toque nas penas.'],
+['Büyük Çiftlik','Big Farm','Большая ферма','Peternakan Besar','Böyük Ferma','المزرعة الكبيرة','Gran Granja','Große Farm','Grande Ferme','Fazenda Grande'],
+['Şıırr!','Splash!','Плюх!','Byur!','Şırr!','شلل!','¡Splash!','Platsch!','Splash !','Splash!'],
+['Şlap!','Splash!','Плюх!','Byur!','Şlap!','شلل!','¡Splash!','Platsch!','Splash !','Splash!'],
+// --- bildirimler ---
+['Depo dolu! Sat ya da genişlet.','Barn full! Sell or expand it.','Склад полон! Продай или расширь.','Gudang penuh! Jual atau perbesar.','Anbar doludur! Sat və ya genişləndir.','المخزن ممتلئ! بع أو وسّعه.','¡Almacén lleno! Vende o amplíalo.','Lager voll! Verkaufe oder erweitere es.','Grenier plein ! Vends ou agrandis-le.','Armazém cheio! Venda ou amplie.'],
+['Depoda satılacak buğday yok.','No wheat in the barn to sell.','На складе нет пшеницы для продажи.','Tidak ada gandum untuk dijual.','Anbarda satılacaq buğda yoxdur.','لا يوجد قمح للبيع في المخزن.','No hay trigo para vender.','Kein Weizen zum Verkaufen im Lager.','Pas de blé à vendre dans le grenier.','Não há trigo para vender.'],
+['Kamyon yolda...','The truck is on the road...','Грузовик в пути...','Truk sedang di jalan...','Yük maşını yoldadır...','الشاحنة في الطريق...','El camión está en camino...','Der Laster ist unterwegs...','Le camion est en route...','O caminhão está na estrada...'],
+['Boş toprağa dokun: ek. Olgun buğdaya dokun: hasat et.','Tap empty soil to plant. Tap ripe wheat to harvest.','Нажми на пустую землю — посадить. На спелую пшеницу — собрать.','Ketuk tanah kosong untuk menanam. Ketuk gandum matang untuk panen.','Boş torpağa toxun: əkin. Yetişmiş buğdaya toxun: yığ.','المس التربة الفارغة للزراعة، والقمح الناضج للحصاد.','Toca la tierra vacía para sembrar y el trigo maduro para cosechar.','Tippe auf leere Erde zum Pflanzen, auf reifen Weizen zum Ernten.','Touche la terre vide pour planter, le blé mûr pour récolter.','Toque na terra vazia para plantar e no trigo maduro para colher.'],
+['Önce # altın gerekli.','You need # gold first.','Сначала нужно # золота.','Butuh # emas dulu.','Əvvəlcə # qızıl lazımdır.','تحتاج # ذهب أولاً.','Primero necesitas # de oro.','Du brauchst zuerst # Gold.','Il te faut d’abord # d’or.','Você precisa de # de ouro antes.'],
+['{0} #. günde açılır (şu an #. gün).','{0} unlocks on day # (now day #).','{0} откроется на # день (сейчас # день).','{0} terbuka di hari # (sekarang hari #).','{0} #-ci gündə açılır (indi #-ci gün).','{0} يُفتح في اليوم # (الآن اليوم #).','{0} se desbloquea el día # (ahora día #).','{0} wird an Tag # freigeschaltet (jetzt Tag #).','{0} se débloque au jour # (jour # actuellement).','{0} desbloqueia no dia # (agora dia #).'],
+['Yetersiz altın: # gerekli.','Not enough gold: # needed.','Не хватает золота: нужно #.','Emas kurang: butuh #.','Qızıl çatmır: # lazımdır.','الذهب غير كافٍ: يلزم #.','Oro insuficiente: se necesitan #.','Nicht genug Gold: # nötig.','Pas assez d’or : # requis.','Ouro insuficiente: precisa de #.'],
+['Yetersiz nakit: # gerekli.','Not enough cash: # needed.','Не хватает наличных: нужно #.','Uang tunai kurang: butuh #.','Nağd çatmır: # lazımdır.','النقد غير كافٍ: يلزم #.','Efectivo insuficiente: se necesitan #.','Nicht genug Bargeld: # nötig.','Pas assez d’argent : # requis.','Dinheiro insuficiente: precisa de #.'],
+['{0} yalnızca Telegram içinde # ⭐ ile açılır.','{0} can only be unlocked in Telegram for # ⭐.','{0} открывается только в Telegram за # ⭐.','{0} hanya bisa dibuka di Telegram dengan # ⭐.','{0} yalnız Telegram daxilində # ⭐ ilə açılır.','{0} يُفتح فقط داخل تيليجرام مقابل # ⭐.','{0} solo se desbloquea en Telegram por # ⭐.','{0} lässt sich nur in Telegram für # ⭐ freischalten.','{0} ne se débloque que dans Telegram pour # ⭐.','{0} só desbloqueia no Telegram por # ⭐.'],
+['Ödeme ekranı hazırlanıyor...','Preparing the payment screen...','Готовим экран оплаты...','Menyiapkan layar pembayaran...','Ödəniş ekranı hazırlanır...','جارٍ تجهيز شاشة الدفع...','Preparando la pantalla de pago...','Zahlungsfenster wird vorbereitet...','Préparation de l’écran de paiement...','Preparando a tela de pagamento...'],
+['Satın alma şu an kullanılamıyor.','Purchases are unavailable right now.','Покупка сейчас недоступна.','Pembelian sedang tidak tersedia.','Satınalma hazırda mümkün deyil.','الشراء غير متاح حاليًا.','Las compras no están disponibles ahora.','Käufe sind gerade nicht möglich.','Les achats sont indisponibles pour le moment.','As compras estão indisponíveis agora.'],
+['Satın alma şu an kullanılamıyor. Biraz sonra tekrar dene.','Purchases are unavailable right now. Try again in a bit.','Покупка сейчас недоступна. Попробуй чуть позже.','Pembelian sedang tidak tersedia. Coba lagi nanti.','Satınalma hazırda mümkün deyil. Bir az sonra yenidən yoxla.','الشراء غير متاح حاليًا. حاول مرة أخرى بعد قليل.','Las compras no están disponibles. Inténtalo de nuevo en un rato.','Käufe sind gerade nicht möglich. Versuche es später erneut.','Achats indisponibles. Réessaie dans un instant.','Compras indisponíveis. Tente novamente daqui a pouco.'],
+['Ödeme alındı...','Payment received...','Оплата получена...','Pembayaran diterima...','Ödəniş alındı...','تم استلام الدفع...','Pago recibido...','Zahlung erhalten...','Paiement reçu...','Pagamento recebido...'],
+['Erken açıldı! Altının yetince {0} alabilirsin.','Unlocked early! You can buy {0} once you have enough gold.','Открыто досрочно! Купишь {0}, когда хватит золота.','Terbuka lebih awal! Kamu bisa beli {0} saat emasmu cukup.','Erkən açıldı! Qızılın çatanda {0} ala bilərsən.','تم الفتح مبكرًا! يمكنك شراء {0} عندما يكفي ذهبك.','¡Desbloqueado antes! Podrás comprar {0} cuando tengas oro suficiente.','Früh freigeschaltet! Du kannst {0} kaufen, sobald dein Gold reicht.','Débloqué en avance ! Tu pourras acheter {0} quand tu auras assez d’or.','Desbloqueado antes! Você poderá comprar {0} quando tiver ouro suficiente.'],
+['Yıldız ödendi! Altının yetince {0} alabilirsin.','Stars paid! You can buy {0} once you have enough gold.','Звёзды оплачены! Купишь {0}, когда хватит золота.','Bintang dibayar! Kamu bisa beli {0} saat emasmu cukup.','Ulduz ödənildi! Qızılın çatanda {0} ala bilərsən.','تم دفع النجوم! يمكنك شراء {0} عندما يكفي ذهبك.','¡Estrellas pagadas! Podrás comprar {0} cuando tengas oro suficiente.','Sterne bezahlt! Du kannst {0} kaufen, sobald dein Gold reicht.','Étoiles payées ! Tu pourras acheter {0} quand tu auras assez d’or.','Estrelas pagas! Você poderá comprar {0} quando tiver ouro suficiente.'],
+['Ödeme alındı ama henüz görünmedi. Biraz sonra tekrar dene.','Payment received but not showing yet. Try again shortly.','Оплата получена, но пока не отобразилась. Попробуй позже.','Pembayaran diterima tapi belum muncul. Coba lagi sebentar lagi.','Ödəniş alındı, amma hələ görünmür. Bir az sonra yenidən yoxla.','تم الدفع لكنه لم يظهر بعد. حاول مجددًا بعد قليل.','Pago recibido pero aún no aparece. Inténtalo en un momento.','Zahlung erhalten, aber noch nicht sichtbar. Versuche es gleich noch einmal.','Paiement reçu mais pas encore visible. Réessaie dans un instant.','Pagamento recebido, mas ainda não apareceu. Tente de novo em instantes.'],
+['Ödeme iptal edildi.','Payment cancelled.','Оплата отменена.','Pembayaran dibatalkan.','Ödəniş ləğv edildi.','تم إلغاء الدفع.','Pago cancelado.','Zahlung abgebrochen.','Paiement annulé.','Pagamento cancelado.'],
+['Ödeme başarısız oldu.','Payment failed.','Оплата не удалась.','Pembayaran gagal.','Ödəniş uğursuz oldu.','فشل الدفع.','El pago falló.','Zahlung fehlgeschlagen.','Le paiement a échoué.','O pagamento falhou.'],
+['Ödeme bekleniyor...','Waiting for payment...','Ожидаем оплату...','Menunggu pembayaran...','Ödəniş gözlənilir...','في انتظار الدفع...','Esperando el pago...','Warte auf Zahlung...','En attente du paiement...','Aguardando pagamento...'],
+['Bağlantı hatası. İnternetini kontrol et.','Connection error. Check your internet.','Ошибка соединения. Проверь интернет.','Kesalahan koneksi. Periksa internetmu.','Bağlantı xətası. İnterneti yoxla.','خطأ في الاتصال. تحقق من الإنترنت.','Error de conexión. Revisa tu internet.','Verbindungsfehler. Prüfe dein Internet.','Erreur de connexion. Vérifie ta connexion.','Erro de conexão. Verifique sua internet.'],
+['{0} senin! {1}','{0} is yours! {1}','{0} теперь твоя! {1}','{0} jadi milikmu! {1}','{0} sənindir! {1}','{0} أصبحت لك! {1}','¡{0} es tuyo! {1}','{0} gehört dir! {1}','{0} est à toi ! {1}','{0} é seu! {1}'],
+['Yükseltildi!','Upgraded!','Улучшено!','Ditingkatkan!','Yüksəldildi!','تمت الترقية!','¡Mejorado!','Aufgewertet!','Amélioré !','Melhorado!'],
+['Ödül alındı','Reward claimed','Награда получена','Hadiah diambil','Mükafat alındı','تم استلام المكافأة','Recompensa reclamada','Belohnung erhalten','Récompense réclamée','Recompensa resgatada'],
+['Oyun sıfırlandı.','Game reset.','Игра сброшена.','Game direset.','Oyun sıfırlandı.','تمت إعادة ضبط اللعبة.','Juego reiniciado.','Spiel zurückgesetzt.','Jeu réinitialisé.','Jogo reiniciado.'],
+['Tam ekran açılamadı.','Could not open fullscreen.','Не удалось открыть полный экран.','Tidak bisa membuka layar penuh.','Tam ekran açıla bilmədi.','تعذر فتح ملء الشاشة.','No se pudo abrir la pantalla completa.','Vollbild konnte nicht geöffnet werden.','Impossible d’ouvrir le plein écran.','Não foi possível abrir a tela cheia.'],
+['Bu tarayıcı tam ekranı desteklemiyor. Paylaş menüsünden Ana Ekrana Ekle ile tam ekran oynayabilirsin.','This browser does not support fullscreen. Use Share > Add to Home Screen to play fullscreen.','Браузер не поддерживает полный экран. Используй «Поделиться» > «На экран Домой».','Browser ini tidak mendukung layar penuh. Gunakan Bagikan > Tambah ke Layar Utama.','Bu brauzer tam ekranı dəstəkləmir. Paylaş menyusundan Ana Ekrana Əlavə et ilə tam ekran oynaya bilərsən.','هذا المتصفح لا يدعم ملء الشاشة. استخدم مشاركة > إضافة إلى الشاشة الرئيسية.','Este navegador no admite pantalla completa. Usa Compartir > Añadir a pantalla de inicio.','Dieser Browser unterstützt kein Vollbild. Nutze Teilen > Zum Home-Bildschirm.','Ce navigateur ne gère pas le plein écran. Utilise Partager > Sur l’écran d’accueil.','Este navegador não suporta tela cheia. Use Compartilhar > Adicionar à Tela de Início.'],
+['Kopyalandı.','Copied.','Скопировано.','Disalin.','Köçürüldü.','تم النسخ.','Copiado.','Kopiert.','Copié.','Copiado.'],
+['Tüm çiftçiler zaten alındı.','All farmers are already hired.','Все фермеры уже наняты.','Semua petani sudah diambil.','Bütün fermerlər artıq alınıb.','تم الحصول على كل المزارعين بالفعل.','Ya tienes todos los granjeros.','Alle Bauern sind schon angeheuert.','Tous les fermiers sont déjà embauchés.','Todos os fazendeiros já foram contratados.'],
+['Ödeme alındı, çiftçin geliyor...','Payment received, your farmer is coming...','Оплата получена, фермер уже идёт...','Pembayaran diterima, petanimu datang...','Ödəniş alındı, fermerin gəlir...','تم الدفع، مزارعك قادم...','Pago recibido, tu granjero ya viene...','Zahlung erhalten, dein Bauer kommt...','Paiement reçu, ton fermier arrive...','Pagamento recebido, seu fazendeiro está vindo...'],
+['Ödeme alındı ama çiftçi henüz görünmedi. Birazdan "Ödememi kontrol et"e dokun.','Payment received but the farmer has not appeared yet. Tap "Check my payment" shortly.','Оплата получена, но фермер пока не появился. Чуть позже нажми «Проверить оплату».','Pembayaran diterima tapi petani belum muncul. Sebentar lagi ketuk "Periksa pembayaran".','Ödəniş alındı, amma fermer hələ görünmür. Bir azdan "Ödənişimi yoxla"ya toxun.','تم الدفع لكن المزارع لم يظهر بعد. المس "تحقق من دفعتي" بعد قليل.','Pago recibido pero el granjero aún no aparece. Toca "Comprobar mi pago" en un momento.','Zahlung erhalten, aber der Bauer ist noch nicht da. Tippe gleich auf „Zahlung prüfen“.','Paiement reçu mais le fermier n’est pas encore là. Touche « Vérifier mon paiement » dans un instant.','Pagamento recebido, mas o fazendeiro ainda não apareceu. Toque em "Verificar pagamento" em instantes.'],
+['Yeni ödeme bulunamadı.','No new payment found.','Новых платежей не найдено.','Tidak ada pembayaran baru.','Yeni ödəniş tapılmadı.','لم يتم العثور على دفعة جديدة.','No se encontró ningún pago nuevo.','Keine neue Zahlung gefunden.','Aucun nouveau paiement trouvé.','Nenhum pagamento novo encontrado.'],
+['Kontrol ediliyor...','Checking...','Проверяем...','Memeriksa...','Yoxlanılır...','جارٍ التحقق...','Comprobando...','Prüfe...','Vérification...','Verificando...'],
+['Yeni çiftçi işe başladı!','A new farmer started work!','Новый фермер приступил к работе!','Petani baru mulai bekerja!','Yeni fermer işə başladı!','بدأ مزارع جديد العمل!','¡Un nuevo granjero empezó a trabajar!','Ein neuer Bauer hat angefangen!','Un nouveau fermier a commencé !','Um novo fazendeiro começou a trabalhar!'],
+['Yeni çiftçi (kadın) işe başladı!','A new farmer (woman) started work!','Новая фермерша приступила к работе!','Petani baru (wanita) mulai bekerja!','Yeni fermer (qadın) işə başladı!','بدأت مزارعة جديدة العمل!','¡Una nueva granjera empezó a trabajar!','Eine neue Bäuerin hat angefangen!','Une nouvelle fermière a commencé !','Uma nova fazendeira começou a trabalhar!'],
+['Yeni çiftçi (erkek) işe başladı!','A new farmer (man) started work!','Новый фермер приступил к работе!','Petani baru (pria) mulai bekerja!','Yeni fermer (kişi) işə başladı!','بدأ مزارع جديد العمل!','¡Un nuevo granjero empezó a trabajar!','Ein neuer Bauer hat angefangen!','Un nouveau fermier a commencé !','Um novo fazendeiro começou a trabalhar!'],
+// --- pencereler ---
+['Bol Hasat','Bountiful Harvest','Богатый урожай','Panen Melimpah','Bol Məhsul','حصاد وفير','Gran Cosecha','Reiche Ernte','Belle Récolte','Grande Colheita'],
+['Hasat başına # → # buğday','Per harvest: # → # wheat','За сбор: # → # пшеницы','Per panen: # → # gandum','Hər məhsulda: # → # buğda','لكل حصاد: # → # قمح','Por cosecha: # → # de trigo','Pro Ernte: # → # Weizen','Par récolte : # → # blé','Por colheita: # → # trigo'],
+['Hızlı Büyüme','Fast Growth','Быстрый рост','Pertumbuhan Cepat','Sürətli Böyümə','نمو سريع','Crecimiento Rápido','Schnelles Wachstum','Croissance Rapide','Crescimento Rápido'],
+['Büyüme süresi # sn','Growth time: # s','Время роста: # с','Waktu tumbuh: # dtk','Böyümə müddəti: # san','مدة النمو: # ث','Tiempo de crecimiento: # s','Wachstumszeit: # s','Temps de pousse : # s','Tempo de crescimento: # s'],
+['Pazar Pazarlığı','Haggling','Торговля','Tawar-menawar','Bazarlıq','المساومة','Regateo','Feilschen','Marchandage','Barganha'],
+['Buğday fiyatı # → # nakit','Wheat price: # → # cash','Цена пшеницы: # → # нал.','Harga gandum: # → # tunai','Buğda qiyməti: # → # nağd','سعر القمح: # → # نقد','Precio del trigo: # → # efectivo','Weizenpreis: # → # Bargeld','Prix du blé : # → # argent','Preço do trigo: # → # dinheiro'],
+['Büyük Depo','Big Barn','Большой склад','Gudang Besar','Böyük Anbar','مخزن كبير','Gran Almacén','Großes Lager','Grand Grenier','Grande Armazém'],
+['Kapasite # → #','Capacity # → #','Вместимость # → #','Kapasitas # → #','Tutum # → #','السعة # → #','Capacidad # → #','Kapazität # → #','Capacité # → #','Capacidade # → #'],
+['En yüksek seviye','Max level','Максимальный уровень','Level maksimum','Ən yüksək səviyyə','أعلى مستوى','Nivel máximo','Höchste Stufe','Niveau maximum','Nível máximo'],
+['Yeni çiftçi için tarla yanındaki küreğe dokun (# ⭐ Telegram Yıldızı). Altınla hayvan alınır.','For a new farmer tap the shovel by the field (# ⭐ Telegram Stars). Animals are bought with gold.','Чтобы нанять фермера, нажми на лопату у поля (# ⭐ Telegram Stars). Животных покупают за золото.','Untuk petani baru, ketuk sekop di samping ladang (# ⭐ Bintang Telegram). Hewan dibeli dengan emas.','Yeni fermer üçün tarla yanındakı kürəyə toxun (# ⭐ Telegram Ulduzu). Heyvanlar qızılla alınır.','لمزارع جديد المس المجرفة بجانب الحقل (# ⭐ نجوم تيليجرام). تُشترى الحيوانات بالذهب.','Para un nuevo granjero toca la pala junto al campo (# ⭐ Estrellas de Telegram). Los animales se compran con oro.','Für einen neuen Bauern tippe auf die Schaufel am Feld (# ⭐ Telegram-Sterne). Tiere kauft man mit Gold.','Pour un nouveau fermier, touche la pelle près du champ (# ⭐ Étoiles Telegram). Les animaux s’achètent avec de l’or.','Para um novo fazendeiro toque na pá ao lado do campo (# ⭐ Estrelas do Telegram). Animais são comprados com ouro.'],
+['Çiftçiler: #/#','Farmers: #/#','Фермеры: #/#','Petani: #/#','Fermerlər: #/#','المزارعون: #/#','Granjeros: #/#','Bauern: #/#','Fermiers : #/#','Fazendeiros: #/#'],
+['İlk çiftçinin görünümü','First farmer’s look','Внешность первого фермера','Tampilan petani pertama','İlk fermerin görünüşü','مظهر المزارع الأول','Aspecto del primer granjero','Aussehen des ersten Bauern','Apparence du premier fermier','Aparência do primeiro fazendeiro'],
+['Kadın çiftçi','Woman farmer','Фермерша','Petani wanita','Qadın fermer','مزارعة','Granjera','Bäuerin','Fermière','Fazendeira'],
+['Erkek çiftçi','Man farmer','Фермер','Petani pria','Kişi fermer','مزارع','Granjero','Bauer','Fermier','Fazendeiro'],
+['Toplam hasat','Total harvest','Всего собрано','Total panen','Ümumi məhsul','إجمالي الحصاد','Cosecha total','Gesamternte','Récolte totale','Colheita total'],
+['Toplanan yumurta','Eggs collected','Собрано яиц','Telur terkumpul','Toplanan yumurta','البيض المجموع','Huevos recogidos','Gesammelte Eier','Œufs ramassés','Ovos coletados'],
+['Diğer çiftçiler sırayla kadın ve erkek olarak katılır.','Other farmers join as women and men in turn.','Остальные фермеры присоединяются поочерёдно: женщина и мужчина.','Petani lain bergabung bergantian wanita dan pria.','Digər fermerlər növbə ilə qadın və kişi olaraq qoşulur.','ينضم باقي المزارعين بالتناوب نساءً ورجالًا.','Los demás granjeros se unen alternando mujer y hombre.','Weitere Bauern kommen abwechselnd als Frau und Mann dazu.','Les autres fermiers rejoignent tour à tour en femme et en homme.','Os outros fazendeiros entram alternando mulher e homem.'],
+['Her ek çiftçi # ⭐ (Telegram Yıldızı)','Each extra farmer costs # ⭐ (Telegram Stars)','Каждый доп. фермер — # ⭐ (Telegram Stars)','Setiap petani tambahan # ⭐ (Bintang Telegram)','Hər əlavə fermer # ⭐ (Telegram Ulduzu)','كل مزارع إضافي # ⭐ (نجوم تيليجرام)','Cada granjero extra cuesta # ⭐ (Estrellas de Telegram)','Jeder weitere Bauer kostet # ⭐ (Telegram-Sterne)','Chaque fermier en plus coûte # ⭐ (Étoiles Telegram)','Cada fazendeiro extra custa # ⭐ (Estrelas do Telegram)'],
+['Tarla dolu: en fazla # çiftçi çalışabilir.','Field full: at most # farmers can work.','Поле заполнено: работать могут максимум # фермера.','Ladang penuh: maksimal # petani bisa bekerja.','Tarla doludur: ən çoxu # fermer işləyə bilər.','الحقل ممتلئ: يمكن لـ # مزارعين العمل كحد أقصى.','Campo lleno: pueden trabajar como máximo # granjeros.','Feld voll: höchstens # Bauern können arbeiten.','Champ plein : # fermiers maximum peuvent travailler.','Campo cheio: no máximo # fazendeiros podem trabalhar.'],
+['⭐ # Yıldız ile satın al','Buy with # ⭐ Stars','Купить за # ⭐','Beli dengan # ⭐ Bintang','# ⭐ Ulduzla satın al','اشترِ بـ # ⭐ نجمة','Comprar con # ⭐ Estrellas','Für # ⭐ Sterne kaufen','Acheter avec # ⭐ Étoiles','Comprar com # ⭐ Estrelas'],
+['Ödememi kontrol et','Check my payment','Проверить оплату','Periksa pembayaran','Ödənişimi yoxla','تحقق من دفعتي','Comprobar mi pago','Zahlung prüfen','Vérifier mon paiement','Verificar pagamento'],
+['Ödeme Telegram üzerinden güvenle yapılır. Ödeme alınınca çiftçin hemen işe başlar. Yıldızların ödendi ama çiftçi gelmediyse "Ödememi kontrol et"e dokun.','Payment is made securely through Telegram. Your farmer starts right after payment. If your Stars were charged but no farmer came, tap "Check my payment".','Оплата безопасно проходит через Telegram. Фермер приступает сразу после оплаты. Если Звёзды списаны, а фермера нет — нажми «Проверить оплату».','Pembayaran aman lewat Telegram. Petani langsung bekerja setelah bayar. Jika Bintang terpotong tapi petani belum datang, ketuk "Periksa pembayaran".','Ödəniş Telegram vasitəsilə təhlükəsiz edilir. Ödəniş alınan kimi fermer işə başlayır. Ulduzlar ödənib, fermer gəlməyibsə "Ödənişimi yoxla"ya toxun.','يتم الدفع بأمان عبر تيليجرام. يبدأ مزارعك العمل فور الدفع. إذا خُصمت نجومك ولم يأتِ المزارع، المس "تحقق من دفعتي".','El pago es seguro a través de Telegram. Tu granjero empieza al instante. Si se cobraron tus Estrellas y no llegó, toca "Comprobar mi pago".','Die Zahlung läuft sicher über Telegram. Dein Bauer startet sofort. Wurden Sterne abgebucht, aber kein Bauer kam, tippe auf „Zahlung prüfen“.','Le paiement est sécurisé via Telegram. Ton fermier démarre aussitôt. Si tes Étoiles sont débitées sans fermier, touche « Vérifier mon paiement ».','O pagamento é seguro pelo Telegram. Seu fazendeiro começa na hora. Se as Estrelas foram cobradas e ele não veio, toque em "Verificar pagamento".'],
+['Çiftçi satın alma yalnızca Telegram içinde, Yıldız ile yapılır. Oyunu botun bağlantısından aç.','Farmers can only be bought inside Telegram with Stars. Open the game from the bot’s link.','Фермеров можно купить только в Telegram за Звёзды. Открой игру по ссылке бота.','Petani hanya bisa dibeli di Telegram dengan Bintang. Buka game dari tautan bot.','Fermer yalnız Telegram daxilində Ulduzla alınır. Oyunu botun linkindən aç.','يمكن شراء المزارعين فقط داخل تيليجرام بالنجوم. افتح اللعبة من رابط البوت.','Los granjeros solo se compran en Telegram con Estrellas. Abre el juego desde el enlace del bot.','Bauern gibt es nur in Telegram mit Sternen. Öffne das Spiel über den Link des Bots.','Les fermiers ne s’achètent que dans Telegram avec des Étoiles. Ouvre le jeu via le lien du bot.','Fazendeiros só podem ser comprados no Telegram com Estrelas. Abra o jogo pelo link do bot.'],
+['Çiftçi başlangıcı','Farmer starter','Начало фермера','Awal Petani','Fermer başlanğıcı','بداية المزارع','Inicio de granjero','Bauern-Start','Début de fermier','Início de fazendeiro'],
+['# buğday hasat et','Harvest # wheat','Собери # пшеницы','Panen # gandum','# buğda yığ','احصد # قمح','Cosecha # de trigo','Ernte # Weizen','Récolte # blé','Colha # de trigo'],
+['İlk satış','First sale','Первая продажа','Penjualan pertama','İlk satış','أول عملية بيع','Primera venta','Erster Verkauf','Première vente','Primeira venda'],
+['Kamyonla depoyu boşalt','Empty the barn with the truck','Опустоши склад грузовиком','Kosongkan gudang dengan truk','Anbarı yük maşını ilə boşalt','أفرغ المخزن بالشاحنة','Vacía el almacén con el camión','Leere das Lager mit dem Laster','Vide le grenier avec le camion','Esvazie o armazém com o caminhão'],
+['Çiftlik büyüyor','The farm is growing','Ферма растёт','Peternakan berkembang','Ferma böyüyür','المزرعة تكبر','La granja crece','Die Farm wächst','La ferme grandit','A fazenda cresce'],
+['İkinci çiftçiyi işe al','Hire the second farmer','Найми второго фермера','Sewa petani kedua','İkinci fermeri işə götür','وظّف المزارع الثاني','Contrata al segundo granjero','Heuere den zweiten Bauern an','Embauche le deuxième fermier','Contrate o segundo fazendeiro'],
+['Tavuk sahibi','Chicken owner','Владелец курицы','Pemilik ayam','Toyuq sahibi','صاحب دجاجة','Dueño de gallina','Huhn-Besitzer','Propriétaire de poule','Dono de galinha'],
+['Bir tavuk satın al','Buy a chicken','Купи курицу','Beli seekor ayam','Bir toyuq al','اشترِ دجاجة','Compra una gallina','Kaufe ein Huhn','Achète une poule','Compre uma galinha'],
+['Yumurta toplayıcı','Egg collector','Сборщик яиц','Pengumpul telur','Yumurta toplayıcı','جامع البيض','Recolector de huevos','Eiersammler','Ramasseur d’œufs','Coletor de ovos'],
+['# yumurta topla','Collect # eggs','Собери # яиц','Kumpulkan # telur','# yumurta topla','اجمع # بيضات','Recoge # huevos','Sammle # Eier','Ramasse # œufs','Colete # ovos'],
+['Büyük hasat','Big harvest','Большой урожай','Panen besar','Böyük məhsul','حصاد كبير','Gran cosecha','Große Ernte','Grosse récolte','Grande colheita'],
+['Dakikadaki hasat','Harvest per minute','Сбор в минуту','Panen per menit','Dəqiqədə məhsul','الحصاد في الدقيقة','Cosecha por minuto','Ernte pro Minute','Récolte par minute','Colheita por minuto'],
+['Tahmini nakit / dk','Est. cash / min','Прим. нал. / мин','Perkiraan tunai / mnt','Təxmini nağd / dəq','النقد المتوقع / د','Efectivo est. / min','Gesch. Bargeld / Min','Argent est. / min','Dinheiro est. / min'],
+['Buğday fiyatı','Wheat price','Цена пшеницы','Harga gandum','Buğda qiyməti','سعر القمح','Precio del trigo','Weizenpreis','Prix du blé','Preço do trigo'],
+['Hasat başına','Per harvest','За сбор','Per panen','Hər məhsulda','لكل حصاد','Por cosecha','Pro Ernte','Par récolte','Por colheita'],
+['Büyüme süresi','Growth time','Время роста','Waktu tumbuh','Böyümə müddəti','مدة النمو','Tiempo de crecimiento','Wachstumszeit','Temps de pousse','Tempo de crescimento'],
+['Toplam satış','Total sales','Всего продаж','Total penjualan','Ümumi satış','إجمالي المبيعات','Ventas totales','Verkäufe gesamt','Ventes totales','Vendas totais'],
+['Kamyon tüm stoku dükkana götürür.','The truck takes all stock to the shop.','Грузовик увозит весь запас в магазин.','Truk membawa semua stok ke toko.','Yük maşını bütün stoku mağazaya aparır.','تنقل الشاحنة كل المخزون إلى المتجر.','El camión lleva todo el stock a la tienda.','Der Laster bringt den ganzen Vorrat zum Laden.','Le camion emmène tout le stock à la boutique.','O caminhão leva todo o estoque à loja.'],
+['Depoyu +# genişlet','Expand barn +#','Расширить склад +#','Perbesar gudang +#','Anbarı +# genişləndir','وسّع المخزن +#','Ampliar almacén +#','Lager erweitern +#','Agrandir le grenier +#','Ampliar armazém +#'],
+['Oyunu sıfırla','Reset game','Сбросить игру','Reset game','Oyunu sıfırla','إعادة ضبط اللعبة','Reiniciar juego','Spiel zurücksetzen','Réinitialiser le jeu','Reiniciar jogo'],
+['Emin misin? Tekrar dokun','Are you sure? Tap again','Уверен? Нажми ещё раз','Yakin? Ketuk lagi','Əminsən? Yenidən toxun','هل أنت متأكد؟ المس مجددًا','¿Seguro? Toca otra vez','Sicher? Tippe erneut','Sûr ? Touche encore','Tem certeza? Toque de novo'],
+['İlerleme bu cihazda otomatik kaydedilir.','Progress is saved automatically on this device.','Прогресс автоматически сохраняется на этом устройстве.','Progres tersimpan otomatis di perangkat ini.','İrəliləyiş bu cihazda avtomatik saxlanılır.','يُحفظ التقدم تلقائيًا على هذا الجهاز.','El progreso se guarda automáticamente en este dispositivo.','Der Fortschritt wird automatisch auf diesem Gerät gespeichert.','La progression est enregistrée automatiquement sur cet appareil.','O progresso é salvo automaticamente neste dispositivo.'],
+['Arkadaşlarının çiftliklerini ziyaret etme özelliği çok yakında.','Visiting your friends’ farms is coming soon.','Скоро можно будет посещать фермы друзей.','Fitur mengunjungi peternakan teman segera hadir.','Dostlarının fermalarını ziyarət etmə tezliklə gəlir.','زيارة مزارع أصدقائك قريبًا.','Pronto podrás visitar las granjas de tus amigos.','Bald kannst du die Farmen deiner Freunde besuchen.','Visiter les fermes de tes amis arrive bientôt.','Visitar as fazendas dos amigos chega em breve.'],
+['Yeni mini oyunlar çok yakında.','New mini-games coming soon.','Скоро появятся новые мини-игры.','Mini game baru segera hadir.','Yeni mini oyunlar tezliklə.','ألعاب مصغرة جديدة قريبًا.','Nuevos minijuegos muy pronto.','Neue Minispiele bald verfügbar.','De nouveaux mini-jeux arrivent bientôt.','Novos minijogos em breve.'],
+// --- ödeme sekmesi ---
+['Ödeme yap','Pay in','Пополнить','Isi saldo','Ödəniş et','إيداع','Depositar','Einzahlen','Déposer','Depositar'],
+['Ödeme al','Withdraw','Вывести','Tarik','Ödəniş al','سحب','Retirar','Auszahlen','Retirer','Sacar'],
+['Bakiyen: # ⭐','Your balance: # ⭐','Твой баланс: # ⭐','Saldomu: # ⭐','Balansın: # ⭐','رصيدك: # ⭐','Tu saldo: # ⭐','Dein Guthaben: # ⭐','Ton solde : # ⭐','Seu saldo: # ⭐'],
+['Bakiyen:','Your balance:','Твой баланс:','Saldomu:','Balansın:','رصيدك:','Tu saldo:','Dein Guthaben:','Ton solde :','Seu saldo:'],
+['Yüklediğin Yıldızlar oyundaki Yıldızlı alımlarda otomatik kullanılır.','Stars you add are used automatically for Star purchases in the game.','Пополненные Звёзды автоматически тратятся на покупки за Звёзды в игре.','Bintang yang kamu isi dipakai otomatis untuk pembelian Bintang di game.','Yüklədiyin Ulduzlar oyundakı Ulduzlu alışlarda avtomatik istifadə olunur.','تُستخدم النجوم التي تودعها تلقائيًا في المشتريات بالنجوم داخل اللعبة.','Las Estrellas que añadas se usan automáticamente en las compras con Estrellas del juego.','Eingezahlte Sterne werden im Spiel automatisch für Stern-Käufe verwendet.','Les Étoiles ajoutées servent automatiquement aux achats en Étoiles du jeu.','As Estrelas depositadas são usadas automaticamente nas compras com Estrelas do jogo.'],
+['Bakiyemi kontrol et','Check my balance','Проверить баланс','Periksa saldo','Balansımı yoxla','تحقق من رصيدي','Comprobar mi saldo','Guthaben prüfen','Vérifier mon solde','Verificar saldo'],
+['Ödeme Telegram üzerinden güvenle yapılır.','Payment is made securely through Telegram.','Оплата безопасно проходит через Telegram.','Pembayaran aman lewat Telegram.','Ödəniş Telegram vasitəsilə təhlükəsiz edilir.','يتم الدفع بأمان عبر تيليجرام.','El pago es seguro a través de Telegram.','Die Zahlung läuft sicher über Telegram.','Le paiement est sécurisé via Telegram.','O pagamento é seguro pelo Telegram.'],
+['Yıldız yükleme yalnızca Telegram içinde yapılır. Oyunu botun bağlantısından aç.','Adding Stars only works inside Telegram. Open the game from the bot’s link.','Пополнение Звёзд работает только в Telegram. Открой игру по ссылке бота.','Isi Bintang hanya bisa di Telegram. Buka game dari tautan bot.','Ulduz yükləmə yalnız Telegram daxilində mümkündür. Oyunu botun linkindən aç.','إيداع النجوم يعمل فقط داخل تيليجرام. افتح اللعبة من رابط البوت.','Añadir Estrellas solo funciona en Telegram. Abre el juego desde el enlace del bot.','Sterne einzahlen geht nur in Telegram. Öffne das Spiel über den Link des Bots.','Ajouter des Étoiles ne marche que dans Telegram. Ouvre le jeu via le lien du bot.','Depositar Estrelas só funciona no Telegram. Abra o jogo pelo link do bot.'],
+['Bakiyene eklendi: +# ⭐','Added to your balance: +# ⭐','Добавлено на баланс: +# ⭐','Ditambahkan ke saldo: +# ⭐','Balansına əlavə edildi: +# ⭐','أُضيف إلى رصيدك: +# ⭐','Añadido a tu saldo: +# ⭐','Deinem Guthaben hinzugefügt: +# ⭐','Ajouté à ton solde : +# ⭐','Adicionado ao saldo: +# ⭐'],
+['🔒 Ödeme alma kilitli','🔒 Withdrawals are locked','🔒 Вывод закрыт','🔒 Penarikan terkunci','🔒 Ödəniş alma kilidlidir','🔒 السحب مقفل','🔒 Retiros bloqueados','🔒 Auszahlung gesperrt','🔒 Retraits verrouillés','🔒 Saques bloqueados'],
+['Ödeme alma','Withdrawals','Вывод средств','Penarikan','Ödəniş alma','السحب','Retiros','Auszahlung','Retraits','Saques'],
+['# gün sonra açılır','Unlocks in # days','Откроется через # дн.','Terbuka dalam # hari','# gün sonra açılır','يُفتح بعد # يومًا','Se desbloquea en # días','Wird in # Tagen freigeschaltet','Se débloque dans # jours','Desbloqueia em # dias'],
+['Çok yakında','Coming soon','Скоро','Segera hadir','Çox yaxında','قريبًا','Muy pronto','Bald verfügbar','Bientôt','Em breve'],
+['Ödeme alma, oynamaya başladıktan 30 gün sonra açılır.','Withdrawals unlock 30 days after you start playing.','Вывод открывается через 30 дней после начала игры.','Penarikan terbuka 30 hari setelah mulai bermain.','Ödəniş alma oynamağa başladıqdan 30 gün sonra açılır.','يُفتح السحب بعد 30 يومًا من بدء اللعب.','Los retiros se desbloquean 30 días después de empezar a jugar.','Die Auszahlung wird 30 Tage nach Spielbeginn freigeschaltet.','Les retraits se débloquent 30 jours après le début du jeu.','Os saques desbloqueiam 30 dias após começar a jogar.']
+];
+var LCODE={en:1,ru:2,id:3,az:4,ar:5,es:6,de:7,fr:8,pt:9};
+function i18nBuild(){
+  I18N={};I18R=null;
+  var keys=[];
+  I18ROWS.forEach(function(r){var v=r[LCODE[LANG]],k0=r[0].replace(/\d+/g,'#');if(v){I18N[k0]=v;keys.push(k0)}});
+  keys.sort(function(a,b){return b.length-a.length});
+  var esc=keys.filter(function(k){return k.indexOf('{')<0}).map(function(k){return k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')});
+  var LET='A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû';
+  try{I18R=new RegExp('(?<!['+LET+'])(?:'+esc.join('|')+')(?!['+LET+'])','g')}catch(e){I18R=null}
+}
+function detectLang(){
+  var ok=function(c){return c&&(c==='tr'||LCODE[c])};
+  try{if(G&&ok(G.lang))return G.lang}catch(e){}
+  var c='';try{c=((TGW&&TGW.initDataUnsafe&&TGW.initDataUnsafe.user&&TGW.initDataUnsafe.user.language_code)||navigator.language||'tr').toLowerCase().slice(0,2)}catch(e){}
+  return ok(c)?c:'en';
+}
+function L(s){
+  if(typeof s!=='string'||!s)return s;
+  if(LANG===null){LANG=detectLang();i18nBuild()}
+  if(LANG==='tr')return s;
+  var m=/^(\s*)([\s\S]*?)(\s*)$/.exec(s),core=m[2];if(!core)return s;
+  var nums=[],norm=core.replace(/\d+(?: \d{3})*(?:[.,]\d+)?/g,function(x){nums.push(x);return'#'});
+  var out=I18N[norm];
+  if(out===undefined){
+    if(!I18R)return s;
+    out=norm.replace(I18R,function(x){return I18N[x]||x});
+  }
+  var i=0;out=out.replace(/#/g,function(){return i<nums.length?nums[i++]:'#'});
+  return m[1]+out+m[3];
+}
+function TF(key){
+  var args=[].slice.call(arguments,1);
+  if(LANG===null){LANG=detectLang();i18nBuild()}
+  var nk=key.replace(/\d+/g,'#'),tpl=(LANG!=='tr'&&I18N[nk])||key,names=(key.match(/\{\d\}/g)||[]).length,nums=args.slice(names),k=0;
+  tpl=tpl.replace(/\{(\d)\}/g,function(_,i){return L(String(args[+i]))});
+  return tpl.replace(/#/g,function(){return k<nums.length?nums[k++]:'#'});
+}
+function LH(h){
+  if(LANG===null){LANG=detectLang();i18nBuild()}
+  if(LANG==='tr')return h;
+  return h.replace(/>([^<>]+)</g,function(m,t){return'>'+L(t)+'<'}).replace(/aria-label="([^"]*)"/g,function(m,t){return'aria-label="'+L(t)+'"'});
+}
+function applyStatic(){
+  var els=[$('bSell'),$('bDepo')].concat([].slice.call(document.querySelectorAll('#menu .t')));
+  els.forEach(function(e){if(!e)return;if(e.dataset.o===undefined)e.dataset.o=e.textContent;e.textContent=L(e.dataset.o)});
+  document.querySelectorAll('[aria-label]').forEach(function(e){if(e.dataset.ao===undefined)e.dataset.ao=e.getAttribute('aria-label');e.setAttribute('aria-label',L(e.dataset.ao))});
+  try{$('panel').dir=LANG==='ar'?'rtl':'ltr';$('toast').dir=LANG==='ar'?'rtl':'ltr';document.documentElement.lang=LANG}catch(e){}
+}
+function setLang(c){
+  if(!(c==='tr'||LCODE[c]))return;
+  LANG=c;G.lang=c;i18nBuild();applyStatic();
+  try{BG=buildBG()}catch(e){}
+  refreshUI();if(modalOpen)renderModal();save();
+}
 
 /* ---------- ses ---------- */
 var AC=null,MG=null,NB=null,lastThunk=0;
@@ -920,7 +1151,7 @@ function stopMusic(){
 
 /* ---------- toast ---------- */
 var toastT=0;
-function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},2100)}
+function toast(msg){var t=$('toast');t.textContent=L(msg);t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(function(){t.classList.remove('on')},2100)}
 
 /* ---------- çevrimdışı kazanç ---------- */
 var OFF_MAX=12*3600,OFF_MIN=45;
@@ -953,7 +1184,7 @@ function syncFarmers(){
 var PEN={};ANI.forEach(function(d){PEN[d.k]=d.big?{x0:232,x1:428,y0:d.sy+54,y1:d.sy+112}:{x0:d.sx+38,x1:d.sx+108,y0:d.sy+160,y1:d.sy+184}});
 function syncAnimals(){ANI.forEach(function(d){var have=0;animals.forEach(function(a){if(a.k===d.k)have++});var need=Math.max(1,cnt(d.k));while(have<need){addAnimal(d.k,have);have++}})}
 function addAnimal(k,i){var p=PEN[k];animals.push({k:k,i:i,x:k==='p'?p.x0-8+i*46:p.x0+10+Math.random()*(p.x1-p.x0-20),y:k==='p'?p.y0+24:p.y0+Math.random()*(p.y1-p.y0),dir:Math.random()<.5?-1:1,tx:0,ty:0,wait:Math.random()*2,moving:false,ph:Math.random()*6,peck:0,dance:0,dnc:0,timer:8+Math.random()*10})}
-function popup(x,y,text,col){parts.push({t:'text',x:x,y:y,vx:0,vy:-26,life:1.3,max:1.3,text:text,col:col||'#fff'})}
+function popup(x,y,text,col){parts.push({t:'text',x:x,y:y,vx:0,vy:-26,life:1.3,max:1.3,text:L(text),col:col||'#fff'})}
 function burst(x,y,n,cols,sp){for(var i=0;i<n;i++){var a=Math.random()*TAU,s=(.4+Math.random())*(sp||40);parts.push({t:'dot',x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-20,life:.5+Math.random()*.4,max:.9,col:cols[i%cols.length],r:1.5+Math.random()*1.6,g:90})}}
 
 function plotCenter(i){return[FX+(i%COLS)*CW+CW/2,FY+Math.floor(i/COLS)*CH+CH/2]}
@@ -2203,18 +2434,18 @@ function questList(){
 function refreshUI(){
   $('vCash').textContent=fmtN(G.cash);$('vCoin').textContent=fmtN(G.coins);
   $('vStock').textContent=fmtN(G.wheat);$('vStockBar').style.width=Math.min(100,G.wheat/capacity()*100)+'%';
-  $('vFarmers').textContent=G.farmers;$('vRate').textContent=Math.round(G._rate||0)+' / dk';
-  var maxF=G.farmers>=MAXF;$('vHire').textContent=maxF?'Dolu':STAR_AMT+' ⭐';
+  $('vFarmers').textContent=G.farmers;$('vRate').textContent=L(Math.round(G._rate||0)+' / dk');
+  var maxF=G.farmers>=MAXF;$('vHire').textContent=maxF?L('Dolu'):STAR_AMT+' ⭐';
   var sellOff=truck.state!=='park'||G.wheat<1;$('bSell').classList.toggle('off',sellOff);
   ANI.forEach(function(d){
     var n=cnt(d.k),t=$('t_'+d.k),p=$('p_'+d.k),b=$('b_'+d.k),cs=aCost(d);
     {var sg=b.parentNode,full=(n>=d.max);if(sg)sg.style.display=full?'none':'';if(d.legs)d.legs.forEach(function(l){l.style.display=full?'none':''})}
-    if(n>=d.max){t.textContent=d.name+' '+n+'/'+d.max;p.textContent='Dolu';b.classList.add('off')}
+    if(n>=d.max){t.textContent=L(d.name)+' '+n+'/'+d.max;p.textContent=L('Dolu');b.classList.add('off')}
     else{
       var early=!!SRV.unl[d.k.toUpperCase()],lock=dayNum()<UNLOCK_DAY[d.k]&&!early,canEarly=lock&&!!d.big&&!!(TGW&&TGW.openInvoice&&TGW.initData),needStar=!!(STAR_ITEM[d.k]&&!SRV.unl[d.k]&&n===0);
-      t.textContent=lock?'Kilitli · Gün '+UNLOCK_DAY[d.k]:(n>0?d.name+' '+n+'/'+d.max:'Satılık');
+      t.textContent=lock?L('Kilitli · Gün '+UNLOCK_DAY[d.k]):(n>0?L(d.name)+' '+n+'/'+d.max:L('Satılık'));
       {var isz=d.big?'13px':'17px';p.innerHTML=fmtN(cs)+' <span class="ico" style="width:'+isz+';height:'+isz+'" data-i="coin"></span>';injectIcons(p)}
-      var bl=canEarly?'Erken '+earlyPrice(d.k)+'⭐':((needStar&&!lock)?'Al +'+STAR_COST[d.k]+'⭐':'Al');if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=d.big?((canEarly||(needStar&&!lock))?'11px':'13px'):((canEarly||(needStar&&!lock))?'15px':'19px')}
+      var bl=L(canEarly?'Erken '+earlyPrice(d.k)+'⭐':((needStar&&!lock)?'Al +'+STAR_COST[d.k]+'⭐':'Al'));if(b.textContent!==bl){b.textContent=bl;b.style.fontSize=d.big?((canEarly||(needStar&&!lock))?'11px':'13px'):((canEarly||(needStar&&!lock))?'15px':'19px')}
       b.classList.toggle('off',(lock&&!canEarly)||G.coins<cs)}
   });
   $('bHire').style.filter=maxF?'grayscale(.7) brightness(.85)':'none';
@@ -2228,10 +2459,10 @@ function buyFarmer(){
 function animalSound(k,v){if(k==='c')SND.cluck(v);else if(k==='d')SND.quack();else if(k==='s')SND.baa(v);else if(k==='p')SND.buzz();else if(k==='z')SND.oink();else if(k==='e')SND.baa(1.35);else if(k==='o')SND.honk();else if(k==='t')SND.gobble();else SND.moo()}
 function buyAnimal(k){
   var d=DEF[k],n=cnt(k);if(n>=d.max)return;
-  var day=dayNum();if(day<UNLOCK_DAY[k]&&!SRV.unl[k.toUpperCase()]){if(d.big&&TGW&&TGW.openInvoice&&TGW.initData){var c0=aCost(d);if(G.coins<c0){toast('Önce '+fmtN(c0)+' altın gerekli.');SND.err();return}starEarly(k);return}toast(d.name+' '+UNLOCK_DAY[k]+'. günde açılır (şu an '+day+'. gün).');SND.err();return}
+  var day=dayNum();if(day<UNLOCK_DAY[k]&&!SRV.unl[k.toUpperCase()]){if(d.big&&TGW&&TGW.openInvoice&&TGW.initData){var c0=aCost(d);if(G.coins<c0){toast('Önce '+fmtN(c0)+' altın gerekli.');SND.err();return}starEarly(k);return}toast(TF('{0} #. günde açılır (şu an #. gün).',d.name,UNLOCK_DAY[k],day));SND.err();return}
   var c=aCost(d);if(G.coins<c){toast('Yetersiz altın: '+fmtN(c)+' gerekli.');SND.err();return}
   if(STAR_ITEM[k]&&!SRV.unl[k]&&n===0){
-    if(!(TGW&&TGW.openInvoice&&TGW.initData)){toast(d.name+' yalnızca Telegram içinde '+STAR_COST[k]+' ⭐ ile açılır.');SND.err();return}
+    if(!(TGW&&TGW.openInvoice&&TGW.initData)){toast(TF('{0} yalnızca Telegram içinde # ⭐ ile açılır.',d.name,STAR_COST[k]));SND.err();return}
     starUnlock(k);return}
   buyAnimalDo(k);
 }
@@ -2246,7 +2477,7 @@ function starEarly(k){
     openInv(r,function(st){
       if(st==='paid'){var n=0;toast('Ödeme alındı...');
         (function poll(){starSync().then(function(){
-          if(SRV.unl[K]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast('Erken açıldı! Altının yetince '+d.name+' alabilirsin.')}
+          if(SRV.unl[K]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast(TF('Erken açıldı! Altının yetince {0} alabilirsin.',d.name))}
           else if(++n>=10){end();toast('Ödeme alındı ama henüz görünmedi. Biraz sonra tekrar dene.')}
           else setTimeout(poll,1500)})})();
       }else{end();toast(st==='cancelled'?'Ödeme iptal edildi.':st==='failed'?'Ödeme başarısız oldu.':'Ödeme bekleniyor...')}
@@ -2262,7 +2493,7 @@ function starUnlock(k){
     openInv(r,function(st){
       if(st==='paid'){var n=0;toast('Ödeme alındı...');
         (function poll(){starSync().then(function(){
-          if(SRV.unl[k]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast('Yıldız ödendi! Altının yetince '+d.name+' alabilirsin.')}
+          if(SRV.unl[k]){end();if(G.coins>=aCost(d)&&cnt(k)<d.max)buyAnimalDo(k);else toast(TF('Yıldız ödendi! Altının yetince {0} alabilirsin.',d.name))}
           else if(++n>=10){end();toast('Ödeme alındı ama henüz görünmedi. Biraz sonra tekrar dene.')}
           else setTimeout(poll,1500)})})();
       }else{end();toast(st==='cancelled'?'Ödeme iptal edildi.':st==='failed'?'Ödeme başarısız oldu.':'Ödeme bekleniyor...')}
@@ -2274,7 +2505,7 @@ function buyAnimalDo(k){
   var c=aCost(d);if(G.coins<c){toast('Yetersiz altın: '+fmtN(c)+' gerekli.');SND.err();return}
   G.coins-=c;G.an[k]=n+1;syncAnimals();SND.buy();
   var an=animals.filter(function(a){return a.k===k&&a.i===n})[0]||animals.filter(function(a){return a.k===k}).pop();burst(an.x,an.y-10,18,['#ffe27a','#fff','#ff9ec0'],70);an.dance=7.4;an.dnc=0;SND.party();
-  toast(d.name+' senin! '+d.tip);setTimeout(function(){animalSound(k)},350);save();
+  toast(TF('{0} senin! {1}',d.name,d.tip));setTimeout(function(){animalSound(k)},350);save();
 }
 function tapWorld(x,y){
   if(tapPlay(x,y))return;
@@ -2356,10 +2587,11 @@ function renderModal(){
   }else if(n==='depo'){
     h=head('Depo');
     h+='<div class="item"><div class="tx"><b>'+fmtN(G.wheat)+' / '+fmtN(capacity())+' buğday</b><small>Kamyon tüm stoku dükkana götürür.</small><div class="bar"><i style="width:'+Math.min(100,G.wheat/capacity()*100)+'%"></i></div></div></div>';
-    var cc=cost(200,1.8,G.up.cap);h+='<button class="btn gold" style="height:44px;font-size:19px" data-up="cap">Depoyu +1 000 genişlet · '+cashTag(cc)+'</button>';
+    var cc=cost(200,1.8,G.up.cap);h+='<button class="btn gold" style="height:44px;font-size:19px" data-up="cap">Depoyu +'+fmtN(1000)+' genişlet · '+cashTag(cc)+'</button>';
   }else if(n==='settings'){
     h=head('Ayarlar');
     h+='<div class="seg"><button class="btn '+(G.sound?'gold':'blue')+'" data-snd="1">Efekt: '+(G.sound?'Açık':'Kapalı')+'</button><button class="btn '+(wantMusic()?'gold':'blue')+'" data-mus="1">Müzik: '+(wantMusic()?'Açık':'Kapalı')+'</button></div>';
+    h+='<div class="hlb">Dil</div><div class="seg" style="flex-wrap:wrap">'+LANGS.map(function(l){return '<button class="btn '+(LANG===l[0]?'gold':'blue')+'" data-lang="'+l[0]+'" style="flex:1 1 44%;height:36px;font-size:14px">'+l[1]+'</button>'}).join('')+'</div>';
     h+='<button class="btn red" style="height:44px;font-size:18px" data-reset="1">'+(resetArm?'Emin misin? Tekrar dokun':'Oyunu sıfırla')+'</button>';
     h+='<div class="note">İlerleme bu cihazda otomatik kaydedilir.</div>';
   }else{
@@ -2383,7 +2615,7 @@ function renderModal(){
     var info={friends:['Arkadaşlar','Arkadaşlarının çiftliklerini ziyaret etme özelliği çok yakında.'],games:['Oyunlar','Yeni mini oyunlar çok yakında.']}[n];
     h=head(info[0])+'<div class="note" style="font-size:16px;padding:8px 4px">'+info[1]+'</div>';
   }}
-  p.innerHTML=h;injectIcons(p);
+  p.innerHTML=LH(h);injectIcons(p);
   if(n==='hire'){try{var qe=$('qr');if(qe&&window.QRCode){qe.innerHTML='';new QRCode(qe,{text:PAY_ADDR,width:106,height:106,colorDark:'#2a1608',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});qe.style.display='block'}}catch(e){}}
 }
 var UNLOCK_DAY={c:1,d:2,s:5,p:8,w:8,z:45,e:60,o:75,t:90},STAR_ITEM={s:1,p:1,w:1,z:1,e:1,o:1,t:1},STAR_COST={s:100,p:100,w:100,z:150,e:150,o:150,t:150},SRV={first:0,now:0,at:0,unl:{},stars:0};
@@ -2437,7 +2669,7 @@ function starBuy(){
     });
   }).catch(function(){done();hMsg('Bağlantı hatası. İnternetini kontrol et.',false)});
 }
-function hMsg(m,ok){var e=$('hSt');if(e){e.textContent=m;e.style.color=ok?'#a6f070':'#ffd0a0'}}
+function hMsg(m,ok){var e=$('hSt');if(e){e.textContent=L(m);e.style.color=ok?'#a6f070':'#ffd0a0'}}
 function hCopy(inp,text){
   var done=function(){toast('Kopyalandı.')},fb=function(){
     try{var tmp=inp||document.createElement('textarea');if(!inp){tmp.value=text;tmp.style.cssText='position:fixed;left:-999px;top:0';document.body.appendChild(tmp)}
@@ -2486,6 +2718,7 @@ $('panel').addEventListener('click',function(ev){
   if(t.dataset.copy){var inp=$(t.dataset.copy);hCopy(inp,inp.value);return}
   if(t.dataset.notify){var tx=($('hTx').value||'').trim();hCopy(null,'Çiftlik Vadisi ödeme | Kimlik: '+PAY.pid+' | Tutar: '+PAY_AMT+' TRX | Adres: '+PAY_ADDR+(tx?' | TXID: '+tx:''));return}
   if(t.dataset.redeem){redeemCode($('hCode').value);return}
+  if(t.dataset.lang){setLang(t.dataset.lang);return}
   if(t.dataset.ptab){payTab=t.dataset.ptab;renderModal();return}
   if(t.dataset.dep){starDeposit(parseInt(t.dataset.dep,10));return}
   if(t.dataset.star==='buy'){starBuy();return}
@@ -2549,7 +2782,7 @@ function init(){
   var cols=['#ff9a3c','#6fb4ff','#ff8fb4'];
   for(var i=0;i<3;i++)butter.push({cx:90+i*120,cy:380+i*40,rad:50+i*14,ph:i*2.1,x:0,y:0,col:cols[i]});
   for(var c=0;c<4;c++)clouds.push({x:c*220,y:140+c*270,r:120+c*18,sp:6+c*2});
-  refreshUI();
+  applyStatic();refreshUI();
   if(!G.seen){G.seen=true;setTimeout(function(){toast('Boş toprağa dokun: ek. Olgun buğdaya dokun: hasat et.')},700)}
   var last=performance.now();
   function loop(now){
