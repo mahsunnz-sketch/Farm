@@ -80,6 +80,8 @@ async function init(env) {
     env.DB.prepare("CREATE INDEX IF NOT EXISTS farmers_uid ON farmers(uid)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS unlocks (uid TEXT NOT NULL, item TEXT NOT NULL, charge TEXT, at INTEGER NOT NULL, PRIMARY KEY (uid, item))"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, first INTEGER NOT NULL)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS referrals (invitee TEXT PRIMARY KEY, inviter TEXT NOT NULL, at INTEGER NOT NULL)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS referrals_inviter ON referrals(inviter)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet (uid TEXT PRIMARY KEY, stars INTEGER NOT NULL DEFAULT 0)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet_log (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, delta INTEGER NOT NULL, at INTEGER NOT NULL)"),
   ]);
@@ -149,4 +151,31 @@ export async function spendStars(env, uid, amount, charge) {
 export async function refundStars(env, uid, amount) {
   await init(env);
   await env.DB.prepare("UPDATE wallet SET stars = stars + ? WHERE uid = ?").bind(amount, String(uid)).run();
+}
+
+// --- Arkadaş daveti: davet edilen yeni oyuncu bir kez sayılır ---
+export async function userExists(env, uid) {
+  await init(env);
+  const row = await env.DB.prepare("SELECT 1 AS x FROM users WHERE uid = ?").bind(String(uid)).first();
+  return !!row;
+}
+// Davet edilen daha önce hiç oynamadıysa, kendisi değilse ve daha önce davet edilmediyse kaydeder.
+export async function recordReferral(env, inviter, invitee) {
+  inviter = String(inviter); invitee = String(invitee);
+  if (!/^\d+$/.test(inviter) || inviter === invitee) return false;
+  if (await userExists(env, invitee)) return false;
+  const r = await env.DB.prepare("INSERT OR IGNORE INTO referrals (invitee, inviter, at) VALUES (?, ?, ?)")
+    .bind(invitee, inviter, Date.now()).run();
+  return !!(r.meta && r.meta.changes);
+}
+export async function countReferrals(env, uid) {
+  await init(env);
+  const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM referrals WHERE inviter = ?").bind(String(uid)).first();
+  return row ? row.n : 0;
+}
+let botName = null;
+export async function botUsername(env) {
+  if (botName) return botName;
+  try { const r = await tgApi(env, "getMe", {}); if (r && r.ok && r.result.username) botName = r.result.username; } catch {}
+  return botName;
 }

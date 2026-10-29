@@ -1,6 +1,6 @@
 import {
   json, tgApi, listPaid, listUnlocks, recordPaid, recordUnlock, price, unlockAmount, safeEqual,
-  MAX_EXTRA, UNLOCK_ITEMS, EARLY, DEPOSITS, addStars,
+  MAX_EXTRA, UNLOCK_ITEMS, EARLY, DEPOSITS, addStars, recordReferral,
 } from "../../src/lib/tg.js";
 
 // Faturadaki payload'ı çözer: farmer:<uid>  veya  unlock:<s|w|z|e|o|t>:<uid>
@@ -42,6 +42,23 @@ export async function onRequest({ request, env }) {
     await tgApi(env, "answerPreCheckoutQuery", ok
       ? { pre_checkout_query_id: q.id, ok: true }
       : { pre_checkout_query_id: q.id, ok: false, error_message: msg });
+    return json({ ok: true });
+  }
+
+  // 1b) Davet linki: /start ref_<id>  -> davet kaydı + oyunu açan düğme
+  const txt = u.message && typeof u.message.text === "string" ? u.message.text : "";
+  const sm = /^\/start(?:@\w+)?\s+ref_(\d+)\s*$/.exec(txt) || (/^\/start(?:@\w+)?\s*$/.test(txt) ? [] : null);
+  if (sm && u.message.from) {
+    if (sm[1]) { try { await recordReferral(env, sm[1], u.message.from.id); } catch {} }
+    const lc = String(u.message.from.language_code || "tr").slice(0, 2);
+    const T = { tr: ["Çiftlik Vadisi'ne hoş geldin! 🌾", "🌾 Oyna"], en: ["Welcome to Farm Valley! 🌾", "🌾 Play"], ru: ["Добро пожаловать в Ферму-долину! 🌾", "🌾 Играть"], id: ["Selamat datang di Lembah Peternakan! 🌾", "🌾 Main"], az: ["Çiftlik Vadisinə xoş gəldin! 🌾", "🌾 Oyna"], ar: ["مرحبًا بك في وادي المزرعة! 🌾", "🌾 العب"], es: ["¡Bienvenido a Valle Granja! 🌾", "🌾 Jugar"], de: ["Willkommen im Farmtal! 🌾", "🌾 Spielen"], fr: ["Bienvenue dans la Vallée de la ferme ! 🌾", "🌾 Jouer"], pt: ["Bem-vindo ao Vale da Fazenda! 🌾", "🌾 Jogar"] };
+    const t = T[lc] || T.en;
+    try {
+      await tgApi(env, "sendMessage", {
+        chat_id: u.message.chat.id, text: t[0],
+        reply_markup: { inline_keyboard: [[{ text: t[1], web_app: { url: new URL(request.url).origin } }]] },
+      });
+    } catch {}
     return json({ ok: true });
   }
 
