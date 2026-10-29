@@ -2449,6 +2449,7 @@ function refreshUI(){
   $('vStock').textContent=fmtN(G.wheat);$('vStockBar').style.width=Math.min(100,G.wheat/capacity()*100)+'%';
   $('vFarmers').textContent=G.farmers;$('vRate').textContent=L(Math.round(G._rate||0)+' / dk');
   var maxF=G.farmers>=MAXF;$('vHire').textContent=maxF?L('Dolu'):STAR_AMT+' ⭐';
+  var dpMax=G.up.cap>=8;$('bDepo').classList.toggle('off',dpMax);$('bDepo').disabled=dpMax;
   var sellOff=truck.state!=='park'||G.wheat<1;$('bSell').classList.toggle('off',sellOff);
   ANI.forEach(function(d){
     var n=cnt(d.k),t=$('t_'+d.k),p=$('p_'+d.k),b=$('b_'+d.k),cs=aCost(d);
@@ -2601,7 +2602,7 @@ function renderModal(){
   }else if(n==='depo'){
     h=head('Depo');
     h+='<div class="item"><div class="tx"><b>'+fmtN(G.wheat)+' / '+fmtN(capacity())+' buğday</b><small>Kamyon tüm stoku dükkana götürür.</small><div class="bar"><i style="width:'+Math.min(100,G.wheat/capacity()*100)+'%"></i></div></div></div>';
-    var cc=cost(200,1.8,G.up.cap);h+='<button class="btn gold" style="height:44px;font-size:19px" data-up="cap">Depoyu +'+fmtN(1000)+' genişlet · '+cashTag(cc)+'</button>';
+    if(G.up.cap>=8)h+='<button class="btn gold off" disabled style="height:44px;font-size:19px">En yüksek seviye</button>';else{var cc=cost(200,1.8,G.up.cap);h+='<button class="btn gold" style="height:44px;font-size:19px" data-up="cap">Depoyu +'+fmtN(1000)+' genişlet · '+cashTag(cc)+'</button>'}
   }else if(n==='settings'){
     h=head('Ayarlar');
     h+='<div class="seg"><button class="btn '+(G.sound?'gold':'blue')+'" data-snd="1">Efekt: '+(G.sound?'Açık':'Kapalı')+'</button><button class="btn '+(wantMusic()?'gold':'blue')+'" data-mus="1">Müzik: '+(wantMusic()?'Açık':'Kapalı')+'</button></div>';
@@ -2758,7 +2759,7 @@ function redeemCode(raw){
 $('panel').addEventListener('click',function(ev){
   var t=ev.target.closest('button');if(!t||t.disabled)return;
   if(t.dataset.x){closeModal();return}
-  if(t.dataset.up){var k=t.dataset.up,mx={yield:9,speed:8,price:12,cap:20}[k],b={yield:[100,1.7],speed:[120,1.7],price:[150,1.8],cap:[200,1.8]}[k];
+  if(t.dataset.up){var k=t.dataset.up,mx={yield:9,speed:8,price:8,cap:8}[k],b={yield:[100,1.7],speed:[120,1.7],price:[150,1.8],cap:[200,1.8]}[k];
     if(G.up[k]>=mx)return;var c=cost(b[0],b[1],G.up[k]);if(G.cash<c){toast('Yetersiz nakit: '+fmtN(c)+' gerekli.');SND.err();return}
     G.cash-=c;G.up[k]++;SND.buy();toast('Yükseltildi!');save();renderModal();return}
   if(t.dataset.g){G.gender=t.dataset.g;syncFarmers();save();renderModal();return}
@@ -2795,7 +2796,7 @@ $('bFull').addEventListener('click',function(){
     else toast('Bu tarayıcı tam ekranı desteklemiyor. Paylaş menüsünden Ana Ekrana Ekle ile tam ekran oynayabilirsin.');
   }catch(e){toast('Tam ekran açılamadı.')}
 });
-$('bDepo').addEventListener('click',function(){openModal('depo')});
+$('bDepo').addEventListener('click',function(){if(G.up.cap>=8)return;openModal('depo')});
 $('bSell').addEventListener('click',startSell);
 $('bHire').addEventListener('click',function(){openModal('hire')});
 ANI.forEach(function(d){
