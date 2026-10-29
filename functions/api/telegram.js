@@ -3,6 +3,8 @@ import {
   MAX_EXTRA, UNLOCK_ITEMS, EARLY, DEPOSITS, addStars, recordReferral,
 } from "../../src/lib/tg.js";
 
+const WELCOME_TR = "🚜 Merhaba, Çiftçi\n\nBu çiftlikte tarlalar ve hayvanlar 7/24 çalışarak sana gerçek para kazandırır 💸\n\nGörevleri tamamla, arkadaşlarını davet et ve çiftliğini daha hızlı geliştir. Büyük ailemizin bir parçası ol.";
+
 // Faturadaki payload'ı çözer: farmer:<uid>  veya  unlock:<s|w|z|e|o|t>:<uid>
 function parsePayload(s) {
   let m = /^dep:(\d+):(\d+)$/.exec(s || "");
@@ -53,12 +55,19 @@ export async function onRequest({ request, env }) {
     const lc = String(u.message.from.language_code || "tr").slice(0, 2);
     const T = { tr: ["Çiftlik Vadisi'ne hoş geldin! 🌾", "🌾 Oyna"], en: ["Welcome to Farm Valley! 🌾", "🌾 Play"], ru: ["Добро пожаловать в Ферму-долину! 🌾", "🌾 Играть"], id: ["Selamat datang di Lembah Peternakan! 🌾", "🌾 Main"], az: ["Çiftlik Vadisinə xoş gəldin! 🌾", "🌾 Oyna"], ar: ["مرحبًا بك في وادي المزرعة! 🌾", "🌾 العب"], es: ["¡Bienvenido a Valle Granja! 🌾", "🌾 Jugar"], de: ["Willkommen im Farmtal! 🌾", "🌾 Spielen"], fr: ["Bienvenue dans la Vallée de la ferme ! 🌾", "🌾 Jouer"], pt: ["Bem-vindo ao Vale da Fazenda! 🌾", "🌾 Jogar"] };
     const t = T[lc] || T.en;
+    const origin = new URL(request.url).origin;
+    const markup = { inline_keyboard: [[{ text: t[1], web_app: { url: origin } }]] };
+    // Türkçe kullanıcılara özel karşılama yazısı; public/welcome.jpg varsa fotoğrafla birlikte gider.
+    const text = lc === "tr" ? WELCOME_TR : t[0];
+    let sent = false;
     try {
-      await tgApi(env, "sendMessage", {
-        chat_id: u.message.chat.id, text: t[0],
-        reply_markup: { inline_keyboard: [[{ text: t[1], web_app: { url: new URL(request.url).origin } }]] },
-      });
+      const head = await env.ASSETS.fetch(new Request(`${origin}/welcome.jpg`, { method: "HEAD" }));
+      if (head.ok) {
+        const r = await tgApi(env, "sendPhoto", { chat_id: u.message.chat.id, photo: `${origin}/welcome.jpg`, caption: text, reply_markup: markup });
+        sent = !!(r && r.ok);
+      }
     } catch {}
+    if (!sent) { try { await tgApi(env, "sendMessage", { chat_id: u.message.chat.id, text, reply_markup: markup }); } catch {} }
     return json({ ok: true });
   }
 
