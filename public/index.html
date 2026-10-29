@@ -2642,7 +2642,7 @@ function renderModal(){
   p.innerHTML=LH(h);injectIcons(p);
   if(n==='hire'){try{var qe=$('qr');if(qe&&window.QRCode){qe.innerHTML='';new QRCode(qe,{text:PAY_ADDR,width:106,height:106,colorDark:'#2a1608',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});qe.style.display='block'}}catch(e){}}
 }
-var UNLOCK_DAY={c:1,d:2,s:5,p:8,w:8,z:45,e:60,o:75,t:90},STAR_ITEM={s:1,p:1,w:1,z:1,e:1,o:1,t:1},STAR_COST={s:100,p:100,w:100,z:150,e:150,o:150,t:150},SRV={first:0,now:0,at:0,unl:{},stars:0,refs:0,bot:'',uid:0};
+var UNLOCK_DAY={c:1,d:2,s:5,p:8,w:8,z:45,e:60,o:75,t:90},STAR_ITEM={s:1,p:1,w:1,z:1,e:1,o:1,t:1},STAR_COST={s:100,p:100,w:100,z:150,e:150,o:150,t:150},SRV={first:0,now:0,at:0,unl:{},stars:0,refs:0,bot:'',main:false,uid:0};
 if(!G.t0)G.t0=Date.now();
 function dayNum(){var base=SRV.first||G.t0||Date.now(),nowMs=SRV.first?SRV.now+(Date.now()-SRV.at):Date.now();return Math.max(1,Math.floor((nowMs-base)/86400000)+1)}
 var starBusy=false;
@@ -2661,12 +2661,12 @@ function starSync(){
   return starPost('/api/status',{initData:TGW.initData,ref:sp}).then(function(r){
     if(r.status!==200)return 0;
     if(r.j.firstSeen){SRV.first=r.j.firstSeen;SRV.now=r.j.now;SRV.at=Date.now()}
-    SRV.unl=r.j.unlocks||{};SRV.stars=r.j.stars||0;SRV.refs=r.j.refs||0;SRV.bot=r.j.bot||'';SRV.uid=r.j.uid||0;
+    SRV.unl=r.j.unlocks||{};SRV.stars=r.j.stars||0;SRV.refs=r.j.refs||0;SRV.bot=r.j.bot||'';SRV.main=!!r.j.mainApp;SRV.uid=r.j.uid||0;
     var a=starApply(r.j.charges);refreshUI();return a}).catch(function(){return 0});
 }
 function errTag(r){try{return ' (hata '+r.status+': '+((r.j&&(r.j.error+(r.j.detail?' - '+r.j.detail:'')))||'yanıt yok')+')'}catch(e){return ''}}
 function refAvail(){return Math.max(0,(SRV.refs||0)-(G.refClaimed||0))}
-function refLink(){return(SRV.bot&&SRV.uid)?'https://t.me/'+SRV.bot+'?start=ref_'+SRV.uid:''}
+function refLink(){return(SRV.bot&&SRV.uid)?'https://t.me/'+SRV.bot+(SRV.main?'?startapp=ref_':'?start=ref_')+SRV.uid:''}
 function refText(){return L('Çiftlik Vadisi\'ni birlikte oynayalım! 🌾 Benim linkimle gir:')}
 function shareRef(how){
   var link=refLink();if(!link)return;var txt=refText();

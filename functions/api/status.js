@@ -1,4 +1,4 @@
-import { json, verifyInitData, listPaid, listUnlocks, firstSeen, getStars, recordReferral, countReferrals, botUsername } from "../../src/lib/tg.js";
+import { json, verifyInitData, listPaid, listUnlocks, firstSeen, getStars, recordReferral, countReferrals, botInfo } from "../../src/lib/tg.js";
 
 export async function onRequest({ request, env }) {
   if (request.method !== "POST") return json({ error: "method" }, 405);
@@ -11,7 +11,7 @@ export async function onRequest({ request, env }) {
   const m = /^ref_(\d+)$/.exec(String(body.ref || ""));
   if (m) { try { await recordReferral(env, m[1], user.id); } catch {} }
   const [charges, unlocks, first, stars, refs, bot] = await Promise.all([
-    listPaid(env, user.id), listUnlocks(env, user.id), firstSeen(env, user.id), getStars(env, user.id), countReferrals(env, user.id), botUsername(env),
+    listPaid(env, user.id), listUnlocks(env, user.id), firstSeen(env, user.id), getStars(env, user.id), countReferrals(env, user.id), botInfo(env, new URL(request.url).origin),
   ]);
-  return json({ count: charges.length, charges, unlocks, firstSeen: first, stars, refs, bot, uid: user.id, now: Date.now() });
+  return json({ count: charges.length, charges, unlocks, firstSeen: first, stars, refs, bot: bot && bot.name, mainApp: !!(bot && bot.main), uid: user.id, now: Date.now() });
 }

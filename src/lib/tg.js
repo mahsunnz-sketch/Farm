@@ -173,9 +173,19 @@ export async function countReferrals(env, uid) {
   const row = await env.DB.prepare("SELECT COUNT(*) AS n FROM referrals WHERE inviter = ?").bind(String(uid)).first();
   return row ? row.n : 0;
 }
-let botName = null;
-export async function botUsername(env) {
-  if (botName) return botName;
-  try { const r = await tgApi(env, "getMe", {}); if (r && r.ok && r.result.username) botName = r.result.username; } catch {}
-  return botName;
+let botName = null, botMain = false, menuSet = false;
+export async function botInfo(env, origin) {
+  if (!botName) {
+    try {
+      const r = await tgApi(env, "getMe", {});
+      if (r && r.ok && r.result.username) { botName = r.result.username; botMain = !!r.result.has_main_web_app; }
+    } catch {}
+  }
+  // Sohbetin sol altındaki menü düğmesi doğrudan oyunu açsın (bir kez ayarlanır).
+  if (!menuSet && origin) {
+    menuSet = true;
+    try { await tgApi(env, "setChatMenuButton", { menu_button: { type: "web_app", text: "🌾 Oyna", web_app: { url: origin } } }); } catch {}
+  }
+  return { name: botName, main: botMain };
 }
+export async function botUsername(env) { return (await botInfo(env)).name; }
