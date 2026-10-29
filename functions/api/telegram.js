@@ -1,6 +1,6 @@
 import {
   json, tgApi, listPaid, listUnlocks, recordPaid, recordUnlock, price, unlockAmount, safeEqual,
-  MAX_EXTRA, UNLOCK_ITEMS, EARLY, DEPOSITS, addStars, recordReferral,
+  MAX_EXTRA, UNLOCK_ITEMS, EARLY, DEPOSITS, addStars, recordReferral, recordPayment,
 } from "../../src/lib/tg.js";
 
 const WELCOME_TR = "🚜 Merhaba, Çiftçi\n\nBu çiftlikte tarlalar ve hayvanlar 7/24 çalışarak sana gerçek para kazandırır 💸\n\nGörevleri tamamla, arkadaşlarını davet et ve çiftliğini daha hızlı geliştir. Büyük ailemizin bir parçası ol.";
@@ -77,6 +77,7 @@ export async function onRequest({ request, env }) {
     const pl = parsePayload(sp.invoice_payload);
     if (pl && sp.currency === "XTR" && sp.total_amount === (await expect(pl)) && String(u.message.from.id) === pl.uid) {
       try {
+        await recordPayment(env, sp.telegram_payment_charge_id, pl.uid, pl.kind, pl.item || null, sp.total_amount);
         if (pl.kind === "dep") await addStars(env, pl.uid, pl.amount, sp.telegram_payment_charge_id);
         else if (pl.kind === "farmer") await recordPaid(env, pl.uid, sp.telegram_payment_charge_id);
         else {

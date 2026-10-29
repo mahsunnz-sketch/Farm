@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Çiftlik Vadisi Panel</title>
+<style>
+:root{--bg:#f3efe4;--card:#fffdf7;--ink:#2a2418;--mute:#7a705a;--line:#e3dcc8;--acc:#2f7d32;--warn:#b86e00;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#161a14;--card:#20261d;--ink:#eef0e6;--mute:#9aa58f;--line:#2f372b;--acc:#7fd27f;--warn:#e6a64a;--bad:#ff8a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,sans-serif;padding:16px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+h1{font-size:20px;margin:0 0 2px}
+.sub{color:var(--mute);font-size:13px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}
+.k{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.v small{font-size:13px;font-weight:500;color:var(--mute)}
+h2{font-size:15px;margin:18px 0 8px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 4px;border-bottom:1px solid var(--line);font-size:13px}
+th{color:var(--mute);font-weight:600}
+td.r,th.r{text-align:right}
+.wrap{overflow-x:auto}
+.bar{display:flex;align-items:flex-end;gap:3px;height:70px}
+.bar i{flex:1;background:var(--acc);border-radius:2px 2px 0 0;min-height:2px;position:relative}
+.bar i:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font:11px system-ui;padding:2px 5px;border-radius:4px;white-space:nowrap}
+.tag{display:inline-block;padding:1px 7px;border-radius:99px;font-size:12px;border:1px solid var(--line)}
+.warn{color:var(--warn)}
+#login{max-width:340px;margin:60px auto;display:none}
+input,button{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+button{background:var(--acc);color:#fff;border:0;margin-top:8px;cursor:pointer}
+#err{color:var(--bad);margin-top:8px;font-size:13px}
+</style>
+</head>
+<body>
+<div id="login"><h1>Yönetim Paneli</h1><div class="sub">Gizli anahtarı gir (Cloudflare'deki SECRET).</div>
+<input id="key" type="password" placeholder="Gizli anahtar" autocomplete="off"><button id="go">Giriş</button><div id="err"></div></div>
+<div id="app" style="display:none">
+<h1>Çiftlik Vadisi Panel</h1><div class="sub" id="upd">Yükleniyor…</div>
+<div class="grid" id="top"></div>
+<h2>Son 14 gün: yeni oyuncu</h2><div class="card"><div class="bar" id="sig"></div></div>
+<h2>Son 14 gün: gelen Stars</h2><div class="card"><div class="bar" id="payd"></div></div>
+<div class="grid" id="mid" style="margin-top:14px"></div>
+<h2>Son ödemeler</h2><div class="card wrap"><table id="rec"></table></div>
+<h2>Satın alınan kilitler</h2><div class="card wrap"><table id="unl"></table></div>
+<h2>En çok davet edenler</h2><div class="card wrap"><table id="top5"></table></div>
+</div>
+<script>
+var $=function(i){return document.getElementById(i)},KEY='';
+function nf(n){return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+function tile(k,v,s){return '<div class="card"><div class="k">'+k+'</div><div class="v">'+v+(s?' <small>'+s+'</small>':'')+'</div></div>'}
+function bars(el,rows,unit){var mx=Math.max.apply(null,rows.map(function(r){return r.v}).concat([1]));
+  el.innerHTML=rows.map(function(r){return '<i style="height:'+Math.max(3,r.v/mx*100)+'%" data-t="'+r.d.slice(5)+': '+nf(r.v)+unit+'"></i>'}).join('')}
+function fill14(map){var out=[],t=Date.now();for(var i=13;i>=0;i--){var d=new Date(t-i*864e5).toISOString().slice(0,10);out.push({d:d,v:map[d]||0})}return out}
+function ago(t){var s=(Date.now()-t)/1000;return s<3600?Math.round(s/60)+' dk önce':s<86400?Math.round(s/3600)+' sa önce':Math.round(s/86400)+' gün önce'}
+var KIND={dep:'Yükleme',farmer:'Çiftçi',unlock:'Hayvan kilidi'},NAMES={s:'Koyun',p:'Kovan',w:'İnek',z:'Domuz',e:'Keçi',o:'Kaz',t:'Hindi',Z:'Domuz (erken)',E:'Keçi (erken)',O:'Kaz (erken)',T:'Hindi (erken)'};
+function load(){
+  fetch('/api/admin',{headers:{'x-admin-key':KEY}}).then(function(r){if(r.status===403)throw 403;return r.json()}).then(function(d){
+    try{localStorage.setItem('adm',KEY)}catch(e){}
+    $('login').style.display='none';$('app').style.display='block';
+    $('upd').textContent='Güncellendi: '+new Date(d.now).toLocaleTimeString('tr-TR')+' · 30 sn\'de bir yenilenir';
+    var u=d.users,p=d.payments,w=d.wallet;
+    $('top').innerHTML=tile('Toplam oyuncu',nf(u.total))+tile('Aktif (24 sa)',nf(u.active24),'7 gün: '+nf(u.active7))+tile('Yeni (24 sa)',nf(u.new24),'7 gün: '+nf(u.new7))+tile('Gelen Stars',nf(p.stars)+' ⭐',nf(p.count)+' ödeme');
+    $('mid').innerHTML=tile('Oyuncu bakiyeleri',nf(w.balance)+' ⭐',nf(w.holders)+' kişi')+tile('Yüklenen toplam',nf(w.deposited)+' ⭐',nf(w.deposits)+' yükleme')+tile('Bakiyeden harcanan',nf(w.spent)+' ⭐',nf(w.spends)+' alım')+tile('Davet',nf(d.referrals.total))+tile('Ödemeli çiftçi',nf(d.shop.paidFarmers))+tile('30 günü dolan',nf(u.eligible30),'çekime hak kazanan')+tile('Çekim talebi',nf(d.withdrawals.requested),d.withdrawals.enabled?'':'sistem kapalı');
+    var sm={};u.signups.forEach(function(r){sm[r.d]=r.n});bars($('sig'),fill14(sm),' kişi');
+    var pm={};p.byDay.forEach(function(r){pm[r.d]=r.s});bars($('payd'),fill14(pm),' ⭐');
+    $('rec').innerHTML='<tr><th>Oyuncu</th><th>Tür</th><th class="r">⭐</th><th class="r">Zaman</th></tr>'+(p.recent.map(function(r){return '<tr><td>'+r.uid+'</td><td>'+(KIND[r.kind]||r.kind)+(r.item?' · '+(NAMES[r.item]||r.item):'')+'</td><td class="r">'+nf(r.amount)+'</td><td class="r">'+ago(r.at)+'</td></tr>'}).join('')||'<tr><td colspan="4" class="warn">Henüz kayıtlı ödeme yok (bu panelden sonraki ödemeler kaydedilir).</td></tr>');
+    $('unl').innerHTML='<tr><th>Hayvan</th><th class="r">Adet</th></tr>'+(d.shop.unlocks.map(function(r){return '<tr><td>'+(NAMES[r.item]||r.item)+'</td><td class="r">'+r.n+'</td></tr>'}).join('')||'<tr><td colspan="2">Yok</td></tr>');
+    $('top5').innerHTML='<tr><th>Oyuncu</th><th class="r">Davet</th></tr>'+(d.referrals.top.map(function(r){return '<tr><td>'+r.uid+'</td><td class="r">'+r.n+'</td></tr>'}).join('')||'<tr><td colspan="2">Yok</td></tr>');
+  }).catch(function(e){
+    $('app').style.display='none';$('login').style.display='block';$('err').textContent=e===403?'Anahtar yanlış.':'Veri alınamadı.';try{localStorage.removeItem('adm')}catch(x){}
+  });
+}
+$('go').onclick=function(){KEY=$('key').value.trim();load()};
+try{KEY=localStorage.getItem('adm')||''}catch(e){}
+if(KEY)load();else $('login').style.display='block';
+setInterval(function(){if(KEY&&$('app').style.display==='block')load()},30000);
+</script>
+</body>
+</html>

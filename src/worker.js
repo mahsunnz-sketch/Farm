@@ -4,12 +4,14 @@ import * as invoice from "../functions/api/invoice.js";
 import * as status from "../functions/api/status.js";
 import * as telegram from "../functions/api/telegram.js";
 import * as setup from "../functions/api/setup.js";
+import * as admin from "../functions/api/admin.js";
 
 const routes = {
   "/api/invoice": invoice,
   "/api/status": status,
   "/api/telegram": telegram,
   "/api/setup": setup,
+  "/api/admin": admin,
 };
 
 export default {

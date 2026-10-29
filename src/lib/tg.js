@@ -82,9 +82,11 @@ async function init(env) {
     env.DB.prepare("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, first INTEGER NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS referrals (invitee TEXT PRIMARY KEY, inviter TEXT NOT NULL, at INTEGER NOT NULL)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS referrals_inviter ON referrals(inviter)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS payments (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, kind TEXT NOT NULL, item TEXT, amount INTEGER NOT NULL, at INTEGER NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet (uid TEXT PRIMARY KEY, stars INTEGER NOT NULL DEFAULT 0)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet_log (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, delta INTEGER NOT NULL, at INTEGER NOT NULL)"),
   ]);
+  try { await env.DB.prepare("ALTER TABLE users ADD COLUMN seen INTEGER").run(); } catch {}
   ready = true;
 }
 
@@ -118,6 +120,7 @@ export async function recordUnlock(env, uid, item, chargeId) {
 export async function firstSeen(env, uid) {
   await init(env);
   await env.DB.prepare("INSERT OR IGNORE INTO users (uid, first) VALUES (?, ?)").bind(String(uid), Date.now()).run();
+  await env.DB.prepare("UPDATE users SET seen = ? WHERE uid = ?").bind(Date.now(), String(uid)).run();
   const row = await env.DB.prepare("SELECT first FROM users WHERE uid = ?").bind(String(uid)).first();
   return row ? row.first : Date.now();
 }
@@ -189,3 +192,45 @@ export async function botInfo(env, origin) {
   return { name: botName, main: botMain };
 }
 export async function botUsername(env) { return (await botInfo(env)).name; }
+
+// --- Yönetim paneli ---
+export async function recordPayment(env, charge, uid, kind, item, amount) {
+  await init(env);
+  await env.DB.prepare("INSERT OR IGNORE INTO payments (charge, uid, kind, item, amount, at) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(String(charge), String(uid), kind, item || null, amount, Date.now()).run();
+}
+export async function adminStats(env) {
+  await init(env);
+  const now = Date.now(), DAY = 86400000, q = async (sql, ...a) => (await env.DB.prepare(sql).bind(...a).all()).results || [];
+  const one = async (sql, ...a) => (await q(sql, ...a))[0] || {};
+  const day14 = now - 14 * DAY;
+  const [users, new24, new7, act24, act7, elig, signups, pay, payKind, payDay, recent, w, wdep, wspent, refs, topRef, farmers, unl] = await Promise.all([
+    one("SELECT COUNT(*) n FROM users"),
+    one("SELECT COUNT(*) n FROM users WHERE first > ?", now - DAY),
+    one("SELECT COUNT(*) n FROM users WHERE first > ?", now - 7 * DAY),
+    one("SELECT COUNT(*) n FROM users WHERE seen > ?", now - DAY),
+    one("SELECT COUNT(*) n FROM users WHERE seen > ?", now - 7 * DAY),
+    one("SELECT COUNT(*) n FROM users WHERE first < ?", now - 30 * DAY),
+    q("SELECT strftime('%Y-%m-%d', first/1000, 'unixepoch') d, COUNT(*) n FROM users WHERE first > ? GROUP BY d ORDER BY d", day14),
+    one("SELECT COUNT(*) n, COALESCE(SUM(amount),0) s FROM payments"),
+    q("SELECT kind, COUNT(*) n, SUM(amount) s FROM payments GROUP BY kind"),
+    q("SELECT strftime('%Y-%m-%d', at/1000, 'unixepoch') d, SUM(amount) s FROM payments WHERE at > ? GROUP BY d ORDER BY d", day14),
+    q("SELECT uid, kind, item, amount, at FROM payments ORDER BY at DESC LIMIT 15"),
+    one("SELECT COALESCE(SUM(stars),0) s, COUNT(CASE WHEN stars>0 THEN 1 END) n FROM wallet"),
+    one("SELECT COALESCE(SUM(delta),0) s, COUNT(*) n FROM wallet_log WHERE delta > 0"),
+    one("SELECT COALESCE(-SUM(delta),0) s, COUNT(*) n FROM wallet_log WHERE delta < 0"),
+    one("SELECT COUNT(*) n FROM referrals"),
+    q("SELECT inviter uid, COUNT(*) n FROM referrals GROUP BY inviter ORDER BY n DESC LIMIT 5"),
+    one("SELECT COUNT(*) n FROM farmers"),
+    q("SELECT item, COUNT(*) n FROM unlocks WHERE item = lower(item) GROUP BY item"),
+  ]);
+  return {
+    now,
+    users: { total: users.n, new24: new24.n, new7: new7.n, active24: act24.n, active7: act7.n, eligible30: elig.n, signups },
+    payments: { count: pay.n, stars: pay.s, byKind: payKind, byDay: payDay, recent },
+    wallet: { balance: w.s, holders: w.n, deposited: wdep.s, deposits: wdep.n, spent: wspent.s, spends: wspent.n },
+    referrals: { total: refs.n, top: topRef },
+    shop: { paidFarmers: farmers.n, unlocks: unl },
+    withdrawals: { enabled: false, requested: 0 },
+  };
+}
