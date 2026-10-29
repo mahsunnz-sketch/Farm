@@ -739,7 +739,6 @@ var yieldPer=function(){return 1+G.up.yield};
 var growTime=function(){return 18*Math.pow(.88,G.up.speed)};
 var sellPrice=function(lv){if(lv==null)lv=G.up.price;return Math.round((1.3+.15*lv)*100)/100};
 var fmtP=function(x){return String(Number(x.toFixed(2))).replace('.',',')};
-var EXR=100;
 var capacity=function(){return 1000+G.up.cap*1000};
 function cost(b,m,l){return Math.round(b*Math.pow(m,l)/5)*5}
 var hireCost=function(){return cost(150,1.9,G.farmers-1)};
@@ -922,7 +921,7 @@ var I18ROWS=[
 ['Ördek ağılın dolu. Yer açılınca alabilirsin.','Your duck pen is full. Claim it when there is room.','Загон для уток полон. Забери, когда освободится место.','Kandang bebek penuh. Ambil saat ada tempat.','Ördək ağılın doludur. Yer açılanda ala bilərsən.','حظيرة البط ممتلئة. استلمها عندما يتوفر مكان.','Tu corral de patos está lleno. Reclámalo cuando haya sitio.','Dein Entengehege ist voll. Hol sie ab, wenn Platz ist.','Ton enclos à canards est plein. Réclame-le quand il y aura de la place.','Seu curral de patos está cheio. Resgate quando houver espaço.'],
 ['Çiftlik Vadisi\'ni birlikte oynayalım! 🌾 Benim linkimle gir:','Let\'s play Farm Valley together! 🌾 Join with my link:','Давай играть в Ферму-долину вместе! 🌾 Заходи по моей ссылке:','Ayo main Lembah Peternakan bersama! 🌾 Masuk lewat tautanku:','Gəl Çiftlik Vadisini birlikdə oynayaq! 🌾 Mənim linkimlə gir:','لنلعب وادي المزرعة معًا! 🌾 ادخل عبر رابطي:','¡Juguemos Valle Granja juntos! 🌾 Entra con mi enlace:','Lass uns zusammen Farmtal spielen! 🌾 Komm über meinen Link:','Jouons ensemble à la Vallée de la ferme ! 🌾 Rejoins avec mon lien :','Vamos jogar Vale da Fazenda juntos! 🌾 Entre pelo meu link:'],
 ['Altın Takası','Gold Exchange','Обмен на золото','Tukar Emas','Qızıl Mübadiləsi','استبدال الذهب','Cambio de oro','Goldtausch','Échange d’or','Troca de ouro'],
-['100 nakit = 1 altın','100 cash = 1 gold','100 нал. = 1 золото','100 tunai = 1 emas','100 nağd = 1 qızıl','100 نقد = 1 ذهب','100 de efectivo = 1 de oro','100 Bargeld = 1 Gold','100 argent = 1 or','100 dinheiro = 1 ouro'],
+['# nakit = # altın','# cash = # gold','# нал. = # золота','# tunai = # emas','# nağd = # qızıl','# نقد = # ذهب','# de efectivo = # de oro','# Bargeld = # Gold','# argent = # or','# dinheiro = # ouro'],
 ['Takas yapıldı!','Exchanged!','Обмен выполнен!','Penukaran berhasil!','Mübadilə edildi!','تم الاستبدال!','¡Cambio hecho!','Getauscht!','Échange effectué !','Troca feita!'],
 // --- ödeme sekmesi ---
 ['Ödeme yap','Pay in','Пополнить','Isi saldo','Ödəniş et','إيداع','Depositar','Einzahlen','Déposer','Depositar'],
@@ -2572,8 +2571,8 @@ function renderModal(){
     ups.forEach(function(u){var lv=G.up[u.k],c=cost(u.b,u.m,lv),mx=lv>=u.max;
       h+='<div class="item"><div class="ic"><span class="ico" style="width:30px;height:30px" data-i="'+u.ic+'"></span></div><div class="tx"><b>'+u.name+' <span style="font-size:13px;color:#8a5a2a">Sv.'+(lv+1)+'</span></b><small>'+(mx?'En yüksek seviye':u.d)+'</small></div>'+
         (mx?'<button class="btn gold off" disabled>Dolu</button>':'<button class="btn '+(G.cash>=c?'gold':'gold off')+'" data-up="'+u.k+'">'+cashTag(c)+'</button>')+'</div>'});
-    h+='<div class="item"><div class="ic"><span class="ico" style="width:30px;height:30px" data-i="coin"></span></div><div class="tx"><b>Altın Takası</b><small>100 nakit = 1 altın</small></div></div>';
-    h+='<div class="seg">'+[10,100,1000].map(function(a){var c=a*EXR;return '<button class="btn '+(G.cash>=c?'gold':'gold off')+'" data-ex="'+a+'" style="font-size:15px;height:44px">+'+fmtN(a)+' <span class="ico" style="width:16px;height:16px;vertical-align:-3px" data-i="coin"></span><br><span style="font-size:11px">'+fmtN(c)+' <span class="ico" style="width:11px;height:11px;vertical-align:-1px" data-i="cash"></span></span></button>'}).join('')+'</div>';
+    h+='<div class="item"><div class="ic"><span class="ico" style="width:30px;height:30px" data-i="coin"></span></div><div class="tx"><b>Altın Takası</b><small>'+fmtN(1000000)+' nakit = 3 altın</small></div></div>';
+    h+='<div class="seg">'+[[3,1000000],[30,10000000],[300,100000000]].map(function(pk){var a=pk[0],c=pk[1];return '<button class="btn '+(G.cash>=c?'gold':'gold off')+'" data-ex="'+a+'" style="font-size:15px;height:44px">+'+fmtN(a)+' <span class="ico" style="width:16px;height:16px;vertical-align:-3px" data-i="coin"></span><br><span style="font-size:11px">'+fmtN(c)+' <span class="ico" style="width:11px;height:11px;vertical-align:-1px" data-i="cash"></span></span></button>'}).join('')+'</div>';
     h+='<div class="note">Yeni çiftçi için tarla yanındaki küreğe dokun ('+STAR_AMT+' ⭐ Telegram Yıldızı). Altınla hayvan alınır.</div>';
   }else if(n==='farm'){
     h=head('Çiftlik');
@@ -2773,7 +2772,7 @@ $('panel').addEventListener('click',function(ev){
   if(t.dataset.copy){var inp=$(t.dataset.copy);hCopy(inp,inp.value);return}
   if(t.dataset.notify){var tx=($('hTx').value||'').trim();hCopy(null,'Çiftlik Vadisi ödeme | Kimlik: '+PAY.pid+' | Tutar: '+PAY_AMT+' TRX | Adres: '+PAY_ADDR+(tx?' | TXID: '+tx:''));return}
   if(t.dataset.redeem){redeemCode($('hCode').value);return}
-  if(t.dataset.ex){var ga=parseInt(t.dataset.ex,10),cx=ga*EXR;if(G.cash<cx){toast('Yetersiz nakit: '+fmtN(cx)+' gerekli.');SND.err();return}G.cash-=cx;G.coins+=ga;SND.buy();toast('Takas yapıldı!');save();refreshUI();renderModal();return}
+  if(t.dataset.ex){var ga=parseInt(t.dataset.ex,10),cx=ga*1000000/3;if(G.cash<cx){toast('Yetersiz nakit: '+fmtN(cx)+' gerekli.');SND.err();return}G.cash-=cx;G.coins+=ga;SND.buy();toast('Takas yapıldı!');save();refreshUI();renderModal();return}
   if(t.dataset.refclaim){claimRef();return}
   if(t.dataset.goto){openModal(t.dataset.goto);return}
   if(t.dataset.share){shareRef(t.dataset.share);return}
