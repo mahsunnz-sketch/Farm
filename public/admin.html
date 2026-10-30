@@ -36,7 +36,7 @@ button{background:var(--acc);color:#fff;border:0;margin-top:8px;cursor:pointer}
 </head>
 <body>
 <div id="login"><h1>Yönetim Paneli</h1><div class="sub">Gizli anahtarı gir (Cloudflare'deki SECRET).</div>
-<input id="key" type="password" placeholder="Gizli anahtar" autocomplete="off"><button id="go">Giriş</button><div id="err"></div></div>
+<input id="key" type="text" placeholder="Gizli anahtar" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><button id="go">Giriş</button><div class="sub" style="margin-top:10px">İpucu: adresin sonuna <b>#şifre</b> ekleyerek de girebilirsin.</div><div id="err"></div></div>
 <div id="app" style="display:none">
 <h1>Çiftlik Vadisi Panel</h1><div class="sub" id="upd">Yükleniyor…</div>
 <div class="grid" id="top"></div>
@@ -70,11 +70,12 @@ function load(){
     $('unl').innerHTML='<tr><th>Hayvan</th><th class="r">Adet</th></tr>'+(d.shop.unlocks.map(function(r){return '<tr><td>'+(NAMES[r.item]||r.item)+'</td><td class="r">'+r.n+'</td></tr>'}).join('')||'<tr><td colspan="2">Yok</td></tr>');
     $('top5').innerHTML='<tr><th>Oyuncu</th><th class="r">Davet</th></tr>'+(d.referrals.top.map(function(r){return '<tr><td>'+r.uid+'</td><td class="r">'+r.n+'</td></tr>'}).join('')||'<tr><td colspan="2">Yok</td></tr>');
   }).catch(function(e){
-    $('app').style.display='none';$('login').style.display='block';$('err').textContent=e===403?'Anahtar yanlış.':'Veri alınamadı.';try{localStorage.removeItem('adm')}catch(x){}
+    $('app').style.display='none';$('login').style.display='block';$('err').textContent=e===403?'Anahtar yanlış (yazdığın '+KEY.length+' karakter).':'Veri alınamadı.';try{localStorage.removeItem('adm')}catch(x){}
   });
 }
 $('go').onclick=function(){KEY=$('key').value.trim();load()};
 try{KEY=localStorage.getItem('adm')||''}catch(e){}
+if(location.hash.length>1){try{KEY=decodeURIComponent(location.hash.slice(1)).trim()}catch(e){KEY=location.hash.slice(1)}try{history.replaceState(null,'',location.pathname)}catch(e){}}
 if(KEY)load();else $('login').style.display='block';
 setInterval(function(){if(KEY&&$('app').style.display==='block')load()},30000);
 </script>
