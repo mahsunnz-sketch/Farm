@@ -1,4 +1,4 @@
-import { json, verifyInitData, listPaid, listUnlocks, firstSeen, getStars, recordReferral, countReferrals, botInfo } from "../../src/lib/tg.js";
+import { json, verifyInitData, listPaid, listUnlocks, firstSeen, getStars, recordReferral, countReferrals, botInfo, listWithdrawals, ackWithdrawals } from "../../src/lib/tg.js";
 
 export async function onRequest({ request, env }) {
   if (request.method !== "POST") return json({ error: "method" }, 405);
@@ -7,11 +7,12 @@ export async function onRequest({ request, env }) {
   try { body = await request.json(); } catch { return json({ error: "bad_request" }, 400); }
   const user = await verifyInitData(body && body.initData, env.BOT_TOKEN);
   if (!user) return json({ error: "unauthorized" }, 401);
+  if (Array.isArray(body.ack)) { try { await ackWithdrawals(env, user.id, body.ack); } catch {} }
   // Davet linkinden (startapp=ref_<id>) gelen yeni oyuncu: ilk görülmeden önce kaydedilir.
   const m = /^ref_(\d+)$/.exec(String(body.ref || ""));
   if (m) { try { await recordReferral(env, m[1], user.id); } catch {} }
-  const [charges, unlocks, first, stars, refs, bot] = await Promise.all([
-    listPaid(env, user.id), listUnlocks(env, user.id), firstSeen(env, user.id), getStars(env, user.id), countReferrals(env, user.id), botInfo(env, new URL(request.url).origin),
+  const [charges, unlocks, first, stars, refs, bot, wd] = await Promise.all([
+    listPaid(env, user.id), listUnlocks(env, user.id), firstSeen(env, user.id), getStars(env, user.id), countReferrals(env, user.id), botInfo(env, new URL(request.url).origin), listWithdrawals(env, user.id),
   ]);
-  return json({ count: charges.length, charges, unlocks, firstSeen: first, stars, refs, bot: bot && bot.name, mainApp: !!(bot && bot.main), uid: user.id, now: Date.now() });
+  return json({ count: charges.length, charges, unlocks, firstSeen: first, stars, refs, bot: bot && bot.name, mainApp: !!(bot && bot.main), uid: user.id, wd, now: Date.now() });
 }

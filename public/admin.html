@@ -30,6 +30,7 @@ td.r,th.r{text-align:right}
 .warn{color:var(--warn)}
 #login{max-width:340px;margin:60px auto;display:none}
 input,button{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+td button{width:auto;padding:6px 10px;margin:2px 0}
 button{background:var(--acc);color:#fff;border:0;margin-top:8px;cursor:pointer}
 #err{color:var(--bad);margin-top:8px;font-size:13px}
 </style>
@@ -43,6 +44,7 @@ button{background:var(--acc);color:#fff;border:0;margin-top:8px;cursor:pointer}
 <h2>Son 14 gün: yeni oyuncu</h2><div class="card"><div class="bar" id="sig"></div></div>
 <h2>Son 14 gün: gelen Stars</h2><div class="card"><div class="bar" id="payd"></div></div>
 <div class="grid" id="mid" style="margin-top:14px"></div>
+<h2>Çekim talepleri (USDT TRC20)</h2><div class="card wrap"><table id="wd"></table></div>
 <h2>Son ödemeler</h2><div class="card wrap"><table id="rec"></table></div>
 <h2>Satın alınan kilitler</h2><div class="card wrap"><table id="unl"></table></div>
 <h2>En çok davet edenler</h2><div class="card wrap"><table id="top5"></table></div>
@@ -63,7 +65,12 @@ function load(){
     $('upd').textContent='Güncellendi: '+new Date(d.now).toLocaleTimeString('tr-TR')+' · 30 sn\'de bir yenilenir';
     var u=d.users,p=d.payments,w=d.wallet;
     $('top').innerHTML=tile('Toplam oyuncu',nf(u.total))+tile('Aktif (24 sa)',nf(u.active24),'7 gün: '+nf(u.active7))+tile('Yeni (24 sa)',nf(u.new24),'7 gün: '+nf(u.new7))+tile('Gelen Stars',nf(p.stars)+' ⭐',nf(p.count)+' ödeme');
-    $('mid').innerHTML=tile('Oyuncu bakiyeleri',nf(w.balance)+' ⭐',nf(w.holders)+' kişi')+tile('Yüklenen toplam',nf(w.deposited)+' ⭐',nf(w.deposits)+' yükleme')+tile('Bakiyeden harcanan',nf(w.spent)+' ⭐',nf(w.spends)+' alım')+tile('Davet',nf(d.referrals.total))+tile('Ödemeli çiftçi',nf(d.shop.paidFarmers))+tile('30 günü dolan',nf(u.eligible30),'çekime hak kazanan')+tile('Çekim talebi',nf(d.withdrawals.requested),d.withdrawals.enabled?'':'sistem kapalı');
+    $('mid').innerHTML=tile('Oyuncu bakiyeleri',nf(w.balance)+' ⭐',nf(w.holders)+' kişi')+tile('Yüklenen toplam',nf(w.deposited)+' ⭐',nf(w.deposits)+' yükleme')+tile('Bakiyeden harcanan',nf(w.spent)+' ⭐',nf(w.spends)+' alım')+tile('Davet',nf(d.referrals.total))+tile('Ödemeli çiftçi',nf(d.shop.paidFarmers))+tile('30 günü dolan',nf(u.eligible30),'çekime hak kazanan')+tile('Bekleyen çekim',nf(d.withdrawals.requested),'USDT TRC20');
+    var ST={pending:'Bekliyor',paid:'Ödendi',rejected:'Reddedildi'};
+    $('wd').innerHTML='<tr><th>No</th><th>Oyuncu</th><th>Adres</th><th class="r">USDT</th><th>Durum</th><th>İşlem</th></tr>'+((d.wdList||[]).map(function(w){
+      var days=w.first?Math.floor((w.at-w.first)/864e5):'?',info=''; try{var st=JSON.parse(w.stats||'{}');info='<br><small>gün '+days+' · altın '+nf(st.coins)+' · nakit '+nf(st.cash)+'</small>'}catch(e){}
+      var act=w.status==='pending'?'<button onclick="wdDo('+w.id+',\'paid\')">Ödedim</button> <button onclick="wdDo('+w.id+',\'rejected\')">Reddet</button>':(w.txid?'<small>'+w.txid.replace(/</g,'')+'</small>':'');
+      return '<tr><td>'+w.id+'</td><td>'+w.uid+info+'</td><td style="word-break:break-all;font-size:12px">'+w.address.replace(/</g,'')+'</td><td class="r">'+nf(w.usd)+'</td><td>'+ST[w.status]+'<br><small>'+ago(w.at)+'</small></td><td>'+act+'</td></tr>'}).join('')||'<tr><td colspan="6">Talep yok</td></tr>');
     var sm={};u.signups.forEach(function(r){sm[r.d]=r.n});bars($('sig'),fill14(sm),' kişi');
     var pm={};p.byDay.forEach(function(r){pm[r.d]=r.s});bars($('payd'),fill14(pm),' ⭐');
     $('rec').innerHTML='<tr><th>Oyuncu</th><th>Tür</th><th class="r">⭐</th><th class="r">Zaman</th></tr>'+(p.recent.map(function(r){return '<tr><td>'+r.uid+'</td><td>'+(KIND[r.kind]||r.kind)+(r.item?' · '+(NAMES[r.item]||r.item):'')+'</td><td class="r">'+nf(r.amount)+'</td><td class="r">'+ago(r.at)+'</td></tr>'}).join('')||'<tr><td colspan="4" class="warn">Henüz kayıtlı ödeme yok (bu panelden sonraki ödemeler kaydedilir).</td></tr>');
@@ -73,6 +80,9 @@ function load(){
     $('app').style.display='none';$('login').style.display='block';$('err').textContent=e===403?'Anahtar yanlış (yazdığın '+KEY.length+' karakter).':'Veri alınamadı.';try{localStorage.removeItem('adm')}catch(x){}
   });
 }
+function wdDo(id,a){var tx='';if(a==='paid'){tx=prompt('İşlem numarası (TXID) — boş bırakabilirsin:')||''}else if(!confirm('Reddedilirse oyuncunun altını iade edilir. Emin misin?'))return;
+  if(a==='paid'&&!confirm('Parayı gönderdin mi? Bu işaret geri alınamaz.'))return;
+  fetch('/api/adminwd',{method:'POST',headers:{'x-admin-key':KEY,'content-type':'application/json'},body:JSON.stringify({id:id,action:a,txid:tx})}).then(function(r){if(!r.ok)alert('İşlem yapılamadı (zaten sonuçlanmış olabilir).');load()})}
 $('go').onclick=function(){KEY=$('key').value.trim();load()};
 try{KEY=localStorage.getItem('adm')||''}catch(e){}
 if(location.hash.length>1){try{KEY=decodeURIComponent(location.hash.slice(1)).trim()}catch(e){KEY=location.hash.slice(1)}try{history.replaceState(null,'',location.pathname)}catch(e){}}

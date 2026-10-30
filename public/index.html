@@ -103,6 +103,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
 .item .btn{min-width:84px;height:38px;font-size:17px;padding:0 10px}
 .bar{height:8px;border-radius:5px;background:rgba(0,0,0,.2);overflow:hidden;margin-top:5px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,#8fe04a,#4cae2f)}
+.inp{width:100%;box-sizing:border-box;height:42px;border-radius:10px;border:2px solid #7a5a2a;background:#2b1d0e;color:#fff;font:700 16px system-ui;padding:0 10px}
 .note{font-size:14px;font-weight:800;color:#f6e3b8;text-align:center;line-height:1.35}
 .seg{display:flex;gap:8px}
 .fld{width:100%;box-sizing:border-box;height:38px;border-radius:10px;border:2px solid #3a2112;background:#fff6dc;color:#2a1608;font:800 14px Nunito,sans-serif;padding:0 10px;min-width:0}
@@ -937,7 +938,27 @@ var I18ROWS=[
 ['Ödeme alma','Withdrawals','Вывод средств','Penarikan','Ödəniş alma','السحب','Retiros','Auszahlung','Retraits','Saques'],
 ['# gün sonra açılır','Unlocks in # days','Откроется через # дн.','Terbuka dalam # hari','# gün sonra açılır','يُفتح بعد # يومًا','Se desbloquea en # días','Wird in # Tagen freigeschaltet','Se débloque dans # jours','Desbloqueia em # dias'],
 ['Çok yakında','Coming soon','Скоро','Segera hadir','Çox yaxında','قريبًا','Muy pronto','Bald verfügbar','Bientôt','Em breve'],
-['Ödeme alma, oynamaya başladıktan 30 gün sonra açılır.','Withdrawals unlock 30 days after you start playing.','Вывод открывается через 30 дней после начала игры.','Penarikan terbuka 30 hari setelah mulai bermain.','Ödəniş alma oynamağa başladıqdan 30 gün sonra açılır.','يُفتح السحب بعد 30 يومًا من بدء اللعب.','Los retiros se desbloquean 30 días después de empezar a jugar.','Die Auszahlung wird 30 Tage nach Spielbeginn freigeschaltet.','Les retraits se débloquent 30 jours après le début du jeu.','Os saques desbloqueiam 30 dias após começar a jogar.']
+['Ödeme alma, oynamaya başladıktan 30 gün sonra açılır.','Withdrawals unlock 30 days after you start playing.','Вывод открывается через 30 дней после начала игры.','Penarikan terbuka 30 hari setelah mulai bermain.','Ödəniş alma oynamağa başladıqdan 30 gün sonra açılır.','يُفتح السحب بعد 30 يومًا من بدء اللعب.','Los retiros se desbloquean 30 días después de empezar a jugar.','Die Auszahlung wird 30 Tage nach Spielbeginn freigeschaltet.','Les retraits se débloquent 30 jours après le début du jeu.','Os saques desbloqueiam 30 dias após começar a jogar.'],
+['Çekilebilir:','Withdrawable:'],
+['altın = 1 USDT','gold = 1 USDT'],
+['en az','minimum'],
+['Bekleyen bir talebin var. Sonuçlanınca yenisini açabilirsin.','You have a pending request. You can open a new one when it is settled.'],
+['Çekim talebi yalnızca Telegram içinde yapılır.','Withdrawal requests are made only inside Telegram.'],
+['Çekim talebi gönder','Send withdrawal request'],
+['Yalnızca TRC20 ağı. Adresi yanlış yazarsan ödeme geri alınamaz.','TRC20 network only. A wrong address cannot be recovered.'],
+['Taleplerim','My requests'],
+['Bekliyor','Pending'],
+['Ödendi','Paid'],
+['Reddedildi (altın iade)','Rejected (gold refunded)'],
+['Altın miktarı (örn. 1000000)','Gold amount (e.g. 1000000)'],
+['USDT (TRC20) cüzdan adresi','USDT (TRC20) wallet address'],
+['Geçerli bir TRC20 adresi yaz (T ile başlar, 34 karakter).','Enter a valid TRC20 address (starts with T, 34 characters).'],
+['Yeterli altının yok.','Not enough gold.'],
+['Henüz 30 gün dolmadı.','30 days have not passed yet.'],
+['Zaten bekleyen bir talebin var.','You already have a pending request.'],
+['Adres geçersiz.','Invalid address.'],
+['Miktar geçersiz.','Invalid amount.'],
+['Gönderilemedi, tekrar dene.','Could not send, try again.']
 ];
 var LCODE={en:1,ru:2,id:3,az:4,ar:5,es:6,de:7,fr:8,pt:9};
 function i18nBuild(){
@@ -2628,8 +2649,24 @@ function renderModal(){
       }else h+='<div class="note" style="font-size:16px;padding:8px 4px">Yıldız yükleme yalnızca Telegram içinde yapılır. Oyunu botun bağlantısından aç.</div>';
     }else{
       var left=Math.max(0,31-dayNum());
-      h+='<div class="item"><div class="tx"><b>'+(left>0?'🔒 Ödeme alma kilitli':'Ödeme alma')+'</b><small>'+(left>0?left+' gün sonra açılır':'Çok yakında')+'</small><div class="bar"><i style="width:'+Math.min(100,Math.max(0,(dayNum()-1)/30*100))+'%"></i></div></div></div>';
+      if(left>0){
+      h+='<div class="item"><div class="tx"><b>🔒 Ödeme alma kilitli</b><small>'+left+' gün sonra açılır</small><div class="bar"><i style="width:'+Math.min(100,Math.max(0,(dayNum()-1)/30*100))+'%"></i></div></div></div>';
       h+='<div class="note">Ödeme alma, oynamaya başladıktan 30 gün sonra açılır.</div>';
+      }else{
+      var pend=(SRV.wd||[]).some(function(w){return w.status==='pending'});
+      h+='<div class="item"><div class="tx"><b>Çekilebilir: '+fmtN(Math.floor(G.coins/1000)*1000)+' altın</b><small>'+fmtN(1000)+' altın = 1 USDT · en az '+fmtN(1000000)+' altın</small></div></div>';
+      if(pend){h+='<div class="note">Bekleyen bir talebin var. Sonuçlanınca yenisini açabilirsin.</div>'}
+      else if(!(TGW&&TGW.initData)){h+='<div class="note">Çekim talebi yalnızca Telegram içinde yapılır.</div>'}
+      else{
+        h+='<input id="wdAmt" class="inp" inputmode="numeric" placeholder="'+L('Altın miktarı (örn. 1000000)')+'" value="'+(wdAmt||'')+'">';
+        h+='<input id="wdAddr" class="inp" placeholder="'+L('USDT (TRC20) cüzdan adresi')+'" autocapitalize="off" autocomplete="off" spellcheck="false" value="'+(wdAddr||'').replace(/"/g,'')+'">';
+        h+='<div class="hst" id="hSt" style="color:#f6e3b8"></div>';
+        h+='<button class="btn gold" data-wd="go" style="height:44px;font-size:18px">Çekim talebi gönder</button>';
+        h+='<div class="note">Yalnızca TRC20 ağı. Adresi yanlış yazarsan ödeme geri alınamaz.</div>';
+      }
+      var hist=(SRV.wd||[]);
+      if(hist.length){h+='<div class="hlb">Taleplerim</div>'+hist.map(function(w){return '<div class="item"><div class="tx"><b>'+fmtN(w.usd)+' USDT</b><small>'+fmtN(w.gold)+' altın · '+({pending:'Bekliyor',paid:'Ödendi',rejected:'Reddedildi (altın iade)'}[w.status]||w.status)+'</small></div></div>'}).join('')}
+      }
     }
     }else{
     if(n==='friends'){
@@ -2667,6 +2704,8 @@ function starSync(){
   return starPost('/api/status',{initData:TGW.initData,ref:sp}).then(function(r){
     if(r.status!==200)return 0;
     if(r.j.firstSeen){SRV.first=r.j.firstSeen;SRV.now=r.j.now;SRV.at=Date.now()}
+    SRV.wd=r.j.wd||[];var ak=[];SRV.wd.forEach(function(w){if(w.status==='rejected'){G.wdRef=G.wdRef||[];if(G.wdRef.indexOf(w.id)<0){G.wdRef.push(w.id);G.coins+=w.gold}if(!w.credited)ak.push(w.id)}});
+    if(ak.length){save();starPost('/api/status',{initData:TGW.initData,ack:ak}).catch(function(){})}
     SRV.unl=r.j.unlocks||{};SRV.stars=r.j.stars||0;SRV.refs=r.j.refs||0;SRV.bot=r.j.bot||'';SRV.main=!!r.j.mainApp;SRV.uid=r.j.uid||0;
     var a=starApply(r.j.charges);refreshUI();return a}).catch(function(){return 0});
 }
@@ -2695,6 +2734,7 @@ function claimRef(){
   toast('Ördek hediyesi geldi!');save();refreshUI();renderModal();
 }
 function openInv(r,cb){if(r.j&&r.j.paid){SRV.stars=r.j.stars||0;setTimeout(function(){cb('paid')},0);return}TGW.openInvoice(r.j.link,cb)}
+var wdAmt='',wdAddr='';
 var payTab='in',DEPS=[100,200,300,400,500,1000];
 function starDeposit(amt){
   if(starBusy)return;starBusy=true;hMsg('Ödeme ekranı hazırlanıyor...',true);
@@ -2781,11 +2821,22 @@ $('panel').addEventListener('click',function(ev){
   if(t.dataset.dep){starDeposit(parseInt(t.dataset.dep,10));return}
   if(t.dataset.star==='buy'){starBuy();return}
   if(t.dataset.star==='check'){hMsg('Kontrol ediliyor...',true);starSync().then(function(a){if(modalOpen==='pay'){renderModal();hMsg('Bakiyen: '+fmtN(SRV.stars||0)+' ⭐',true)}else if(!a)hMsg('Yeni ödeme bulunamadı.',false)});return}
+  if(t.dataset.wd){
+    var amt=parseInt(String($('wdAmt').value).replace(/\D/g,''),10)||0,ad=String($('wdAddr').value).trim();wdAmt=amt?String(amt):'';wdAddr=ad;
+    if(!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(ad)){hMsg('Geçerli bir TRC20 adresi yaz (T ile başlar, 34 karakter).',false);return}
+    if(amt<1000000||amt%1000){hMsg('En az 1.000.000 altın ve 1.000\'in katı olmalı.',false);return}
+    if(G.coins<amt){hMsg('Yeterli altının yok.',false);return}
+    t.disabled=true;
+    starPost('/api/withdraw',{initData:TGW.initData,address:ad,gold:amt,stats:{coins:Math.floor(G.coins),cash:Math.floor(G.cash||0),day:dayNum()}}).then(function(r){
+      if(r.status===200&&r.j&&r.j.ok){G.coins-=amt;wdAmt='';save();starSync().then(function(){renderModal();hMsg('Talebin alındı: '+fmtN(r.j.usd)+' USDT',true)})}
+      else{t.disabled=false;var e=r.j&&r.j.error;hMsg(e==='locked'?'Henüz 30 gün dolmadı.':e==='pending_exists'?'Zaten bekleyen bir talebin var.':e==='bad_address'?'Adres geçersiz.':e==='bad_amount'?'Miktar geçersiz.':'Gönderilemedi, tekrar dene.',false)}
+    }).catch(function(){t.disabled=false;hMsg('Gönderilemedi, tekrar dene.',false)});return}
   if(t.dataset.snd){G.sound=!G.sound;save();renderModal();return}
   if(t.dataset.mus){G.music=!wantMusic();if(G.music)startMusic();else stopMusic();save();renderModal();return}
   if(t.dataset.reset){if(!resetArm){resetArm=true;renderModal();setTimeout(function(){resetArm=false;if(modalOpen==='settings')renderModal()},4000);return}
     try{localStorage.removeItem(KEY)}catch(e){}G=fresh();G.farmers=Math.min(MAXF,1+PAY.paid.length);farmers=[];animals=[];eggs=[];beltItems=[];flyers=[];harvLog=[];for(var i=0;i<24;i++)plotRes[i]=null;syncFarmers();syncAnimals();resetArm=false;closeModal();toast('Oyun sıfırlandı.');return}
 });
+$('panel').addEventListener('input',function(ev){var e=ev.target;if(e.id==='wdAmt')wdAmt=e.value;else if(e.id==='wdAddr')wdAddr=e.value});
 $('modal').addEventListener('click',function(ev){if(ev.target===$('modal'))closeModal()});
 document.addEventListener('keydown',function(ev){if(ev.key==='Escape')closeModal()});
 document.addEventListener('pointerdown',function(ev){actx();startMusic();},true);

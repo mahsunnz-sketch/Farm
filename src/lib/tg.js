@@ -82,6 +82,8 @@ async function init(env) {
     env.DB.prepare("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, first INTEGER NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS referrals (invitee TEXT PRIMARY KEY, inviter TEXT NOT NULL, at INTEGER NOT NULL)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS referrals_inviter ON referrals(inviter)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS withdrawals (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT NOT NULL, address TEXT NOT NULL, gold INTEGER NOT NULL, usd REAL NOT NULL, status TEXT NOT NULL, stats TEXT, at INTEGER NOT NULL, decided INTEGER, txid TEXT, credited INTEGER NOT NULL DEFAULT 0)"),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS wd_uid ON withdrawals(uid)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS payments (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, kind TEXT NOT NULL, item TEXT, amount INTEGER NOT NULL, at INTEGER NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet (uid TEXT PRIMARY KEY, stars INTEGER NOT NULL DEFAULT 0)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS wallet_log (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, delta INTEGER NOT NULL, at INTEGER NOT NULL)"),
@@ -233,4 +235,46 @@ export async function adminStats(env) {
     shop: { paidFarmers: farmers.n, unlocks: unl },
     withdrawals: { enabled: false, requested: 0 },
   };
+}
+// --- Kripto çekim talepleri (USDT TRC20, elle ödenir) ---
+export const WD_GOLD_PER_USD = 1000;   // 1000 altın = 1 USDT
+export const WD_MIN_GOLD = 1000000;    // en az 1 milyon altın
+export const WD_DAYS = 30;             // oynamaya başladıktan 30 gün sonra
+export const TRC20 = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
+export async function createWithdrawal(env, uid, address, gold, stats) {
+  await init(env);
+  const first = await firstSeen(env, uid);
+  if (Date.now() - first < WD_DAYS * 86400000) return { error: "locked", opensAt: first + WD_DAYS * 86400000 };
+  if (!TRC20.test(address || "")) return { error: "bad_address" };
+  if (!Number.isInteger(gold) || gold < WD_MIN_GOLD || gold % WD_GOLD_PER_USD !== 0) return { error: "bad_amount" };
+  const open = await env.DB.prepare("SELECT 1 AS x FROM withdrawals WHERE uid = ? AND status = 'pending'").bind(String(uid)).first();
+  if (open) return { error: "pending_exists" };
+  const usd = gold / WD_GOLD_PER_USD;
+  const r = await env.DB.prepare("INSERT INTO withdrawals (uid, address, gold, usd, status, stats, at) VALUES (?, ?, ?, ?, 'pending', ?, ?)")
+    .bind(String(uid), address, gold, usd, JSON.stringify(stats || {}).slice(0, 1000), Date.now()).run();
+  return { ok: true, usd, id: r.meta && r.meta.last_row_id };
+}
+export async function listWithdrawals(env, uid) {
+  await init(env);
+  const r = await env.DB.prepare("SELECT id, gold, usd, status, txid, credited, at FROM withdrawals WHERE uid = ? ORDER BY id DESC LIMIT 10").bind(String(uid)).all();
+  return r.results || [];
+}
+export async function ackWithdrawals(env, uid, ids) {
+  await init(env);
+  for (const id of (ids || []).slice(0, 10)) {
+    if (Number.isInteger(id)) await env.DB.prepare("UPDATE withdrawals SET credited = 1 WHERE id = ? AND uid = ? AND status = 'rejected'").bind(id, String(uid)).run();
+  }
+}
+export async function adminWithdrawals(env) {
+  await init(env);
+  const r = await env.DB.prepare("SELECT w.id, w.uid, w.address, w.gold, w.usd, w.status, w.stats, w.at, w.decided, w.txid, u.first FROM withdrawals w LEFT JOIN users u ON u.uid = w.uid ORDER BY (w.status = 'pending') DESC, w.id DESC LIMIT 40").all();
+  return r.results || [];
+}
+export async function decideWithdrawal(env, id, action, txid) {
+  await init(env);
+  const st = action === "paid" ? "paid" : action === "rejected" ? "rejected" : null;
+  if (!st || !Number.isInteger(id)) return false;
+  const r = await env.DB.prepare("UPDATE withdrawals SET status = ?, decided = ?, txid = ? WHERE id = ? AND status = 'pending'")
+    .bind(st, Date.now(), String(txid || "").slice(0, 120) || null, id).run();
+  return !!(r.meta && r.meta.changes);
 }
