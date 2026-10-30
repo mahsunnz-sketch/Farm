@@ -956,6 +956,7 @@ var I18ROWS=[
 ['Yeterli altının yok.','Not enough gold.'],
 ['Henüz 30 gün dolmadı.','30 days have not passed yet.'],
 ['Zaten bekleyen bir talebin var.','You already have a pending request.'],
+['Şu an en fazla # altın çekebilirsin.','You can withdraw at most # gold right now.'],
 ['Adres geçersiz.','Invalid address.'],
 ['Miktar geçersiz.','Invalid amount.'],
 ['Gönderilemedi, tekrar dene.','Could not send, try again.']
@@ -2829,7 +2830,7 @@ $('panel').addEventListener('click',function(ev){
     t.disabled=true;
     starPost('/api/withdraw',{initData:TGW.initData,address:ad,gold:amt,stats:{coins:Math.floor(G.coins),cash:Math.floor(G.cash||0),day:dayNum()}}).then(function(r){
       if(r.status===200&&r.j&&r.j.ok){G.coins-=amt;wdAmt='';save();starSync().then(function(){renderModal();hMsg('Talebin alındı: '+fmtN(r.j.usd)+' USDT',true)})}
-      else{t.disabled=false;var e=r.j&&r.j.error;hMsg(e==='locked'?'Henüz 30 gün dolmadı.':e==='pending_exists'?'Zaten bekleyen bir talebin var.':e==='bad_address'?'Adres geçersiz.':e==='bad_amount'?'Miktar geçersiz.':'Gönderilemedi, tekrar dene.',false)}
+      else{t.disabled=false;var e=r.j&&r.j.error;hMsg(e==='locked'?'Henüz 30 gün dolmadı.':e==='pending_exists'?'Zaten bekleyen bir talebin var.':e==='bad_address'?'Adres geçersiz.':e==='bad_amount'?'Miktar geçersiz.':e==='over_cap'?TF('Şu an en fazla # altın çekebilirsin.',Math.floor(r.j.max/1000)*1000):'Gönderilemedi, tekrar dene.',false)}
     }).catch(function(){t.disabled=false;hMsg('Gönderilemedi, tekrar dene.',false)});return}
   if(t.dataset.snd){G.sound=!G.sound;save();renderModal();return}
   if(t.dataset.mus){G.music=!wantMusic();if(G.music)startMusic();else stopMusic();save();renderModal();return}

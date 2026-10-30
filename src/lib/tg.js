@@ -240,6 +240,7 @@ export async function adminStats(env) {
 export const WD_GOLD_PER_USD = 1000;   // 1000 altın = 1 USDT
 export const WD_MIN_GOLD = 1000000;    // en az 1 milyon altın
 export const WD_DAYS = 30;             // oynamaya başladıktan 30 gün sonra
+export const WD_MAX_PER_DAY = 40000;  // bir oyuncunun gün başına kazanabileceği en çok altın (sunucu sınırı)
 export const TRC20 = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 export async function createWithdrawal(env, uid, address, gold, stats) {
   await init(env);
@@ -249,6 +250,10 @@ export async function createWithdrawal(env, uid, address, gold, stats) {
   if (!Number.isInteger(gold) || gold < WD_MIN_GOLD || gold % WD_GOLD_PER_USD !== 0) return { error: "bad_amount" };
   const open = await env.DB.prepare("SELECT 1 AS x FROM withdrawals WHERE uid = ? AND status = 'pending'").bind(String(uid)).first();
   if (open) return { error: "pending_exists" };
+  // Hile freni: altın telefonda tutulduğu için, geçen güne göre kazanılabilecek en çok altını sunucu sınırlar.
+  const cap = Math.floor((Date.now() - first) / 86400000) * WD_MAX_PER_DAY;
+  const used = await env.DB.prepare("SELECT COALESCE(SUM(gold),0) AS g FROM withdrawals WHERE uid = ? AND status IN ('pending','paid')").bind(String(uid)).first();
+  if ((used ? used.g : 0) + gold > cap) return { error: "over_cap", max: Math.max(0, cap - (used ? used.g : 0)) };
   const usd = gold / WD_GOLD_PER_USD;
   const r = await env.DB.prepare("INSERT INTO withdrawals (uid, address, gold, usd, status, stats, at) VALUES (?, ?, ?, ?, 'pending', ?, ?)")
     .bind(String(uid), address, gold, usd, JSON.stringify(stats || {}).slice(0, 1000), Date.now()).run();
