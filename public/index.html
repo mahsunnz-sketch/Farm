@@ -957,6 +957,7 @@ var I18ROWS=[
 ['Henüz 30 gün dolmadı.','30 days have not passed yet.'],
 ['Zaten bekleyen bir talebin var.','You already have a pending request.'],
 ['Şu an en fazla # altın çekebilirsin.','You can withdraw at most # gold right now.'],
+['Sunucudaki altının yetmiyor.','Your server gold is not enough.'],
 ['Adres geçersiz.','Invalid address.'],
 ['Miktar geçersiz.','Invalid amount.'],
 ['Gönderilemedi, tekrar dene.','Could not send, try again.']
@@ -2699,16 +2700,25 @@ function starApply(charges){
     toast(add>1?add+' yeni çiftçi işe başladı!':'Yeni çiftçi işe başladı!');refreshUI();if(modalOpen==='hire')renderModal()}
   return add;
 }
+var goldBusy=false;
+function goldSync(){
+  if(!TGW||!TGW.initData||goldBusy)return Promise.resolve();
+  goldBusy=true;var sent=Math.floor(G.coins);
+  return starPost('/api/gold',{initData:TGW.initData,coins:sent,base:(G.gsb==null?null:G.gsb)}).then(function(r){
+    goldBusy=false;if(r.status!==200||!r.j||typeof r.j.bal!=='number')return;
+    G.coins=r.j.bal+(G.coins-sent);G.gsb=r.j.bal;save();refreshUI();
+  }).catch(function(){goldBusy=false});
+}
+setInterval(function(){goldSync()},30000);
 function starSync(){
   if(!TGW||!TGW.initData)return Promise.resolve(0);
   var sp='';try{sp=(TGW.initDataUnsafe&&TGW.initDataUnsafe.start_param)||''}catch(e){}
   return starPost('/api/status',{initData:TGW.initData,ref:sp}).then(function(r){
     if(r.status!==200)return 0;
     if(r.j.firstSeen){SRV.first=r.j.firstSeen;SRV.now=r.j.now;SRV.at=Date.now()}
-    SRV.wd=r.j.wd||[];var ak=[];SRV.wd.forEach(function(w){if(w.status==='rejected'){G.wdRef=G.wdRef||[];if(G.wdRef.indexOf(w.id)<0){G.wdRef.push(w.id);G.coins+=w.gold}if(!w.credited)ak.push(w.id)}});
-    if(ak.length){save();starPost('/api/status',{initData:TGW.initData,ack:ak}).catch(function(){})}
+    SRV.wd=r.j.wd||[];
     SRV.unl=r.j.unlocks||{};SRV.stars=r.j.stars||0;SRV.refs=r.j.refs||0;SRV.bot=r.j.bot||'';SRV.main=!!r.j.mainApp;SRV.uid=r.j.uid||0;
-    var a=starApply(r.j.charges);refreshUI();return a}).catch(function(){return 0});
+    var a=starApply(r.j.charges);refreshUI();goldSync();return a}).catch(function(){return 0});
 }
 function errTag(r){try{return ' (hata '+r.status+': '+((r.j&&(r.j.error+(r.j.detail?' - '+r.j.detail:'')))||'yanıt yok')+')'}catch(e){return ''}}
 function refAvail(){return Math.max(0,(SRV.refs||0)-(G.refClaimed||0))}
@@ -2828,10 +2838,10 @@ $('panel').addEventListener('click',function(ev){
     if(amt<1000000||amt%1000){hMsg('En az 1.000.000 altın ve 1.000\'in katı olmalı.',false);return}
     if(G.coins<amt){hMsg('Yeterli altının yok.',false);return}
     t.disabled=true;
-    starPost('/api/withdraw',{initData:TGW.initData,address:ad,gold:amt,stats:{coins:Math.floor(G.coins),cash:Math.floor(G.cash||0),day:dayNum()}}).then(function(r){
-      if(r.status===200&&r.j&&r.j.ok){G.coins-=amt;wdAmt='';save();starSync().then(function(){renderModal();hMsg('Talebin alındı: '+fmtN(r.j.usd)+' USDT',true)})}
-      else{t.disabled=false;var e=r.j&&r.j.error;hMsg(e==='locked'?'Henüz 30 gün dolmadı.':e==='pending_exists'?'Zaten bekleyen bir talebin var.':e==='bad_address'?'Adres geçersiz.':e==='bad_amount'?'Miktar geçersiz.':e==='over_cap'?TF('Şu an en fazla # altın çekebilirsin.',Math.floor(r.j.max/1000)*1000):'Gönderilemedi, tekrar dene.',false)}
-    }).catch(function(){t.disabled=false;hMsg('Gönderilemedi, tekrar dene.',false)});return}
+    goldSync().then(function(){return starPost('/api/withdraw',{initData:TGW.initData,address:ad,gold:amt,stats:{coins:Math.floor(G.coins),cash:Math.floor(G.cash||0),day:dayNum()}}).then(function(r){
+      if(r.status===200&&r.j&&r.j.ok){G.coins=r.j.bal;G.gsb=r.j.bal;wdAmt='';save();starSync().then(function(){renderModal();hMsg('Talebin alındı: '+fmtN(r.j.usd)+' USDT',true)})}
+      else{t.disabled=false;var e=r.j&&r.j.error;hMsg(e==='locked'?'Henüz 30 gün dolmadı.':e==='pending_exists'?'Zaten bekleyen bir talebin var.':e==='bad_address'?'Adres geçersiz.':e==='bad_amount'?'Miktar geçersiz.':e==='no_gold'?(typeof r.j.bal==='number'&&(G.coins=r.j.bal,G.gsb=r.j.bal,save()),'Sunucudaki altının yetmiyor.'):e==='over_cap'?TF('Şu an en fazla # altın çekebilirsin.',Math.floor(r.j.max/1000)*1000):'Gönderilemedi, tekrar dene.',false)}
+    })}).catch(function(){t.disabled=false;hMsg('Gönderilemedi, tekrar dene.',false)});return}
   if(t.dataset.snd){G.sound=!G.sound;save();renderModal();return}
   if(t.dataset.mus){G.music=!wantMusic();if(G.music)startMusic();else stopMusic();save();renderModal();return}
   if(t.dataset.reset){if(!resetArm){resetArm=true;renderModal();setTimeout(function(){resetArm=false;if(modalOpen==='settings')renderModal()},4000);return}

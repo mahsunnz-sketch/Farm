@@ -82,6 +82,7 @@ async function init(env) {
     env.DB.prepare("CREATE TABLE IF NOT EXISTS users (uid TEXT PRIMARY KEY, first INTEGER NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS referrals (invitee TEXT PRIMARY KEY, inviter TEXT NOT NULL, at INTEGER NOT NULL)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS referrals_inviter ON referrals(inviter)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS gold (uid TEXT PRIMARY KEY, bal INTEGER NOT NULL DEFAULT 0, credit REAL NOT NULL DEFAULT 0, at INTEGER NOT NULL)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS withdrawals (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT NOT NULL, address TEXT NOT NULL, gold INTEGER NOT NULL, usd REAL NOT NULL, status TEXT NOT NULL, stats TEXT, at INTEGER NOT NULL, decided INTEGER, txid TEXT, credited INTEGER NOT NULL DEFAULT 0)"),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS wd_uid ON withdrawals(uid)"),
     env.DB.prepare("CREATE TABLE IF NOT EXISTS payments (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, kind TEXT NOT NULL, item TEXT, amount INTEGER NOT NULL, at INTEGER NOT NULL)"),
@@ -171,7 +172,12 @@ export async function recordReferral(env, inviter, invitee) {
   if (await userExists(env, invitee)) return false;
   const r = await env.DB.prepare("INSERT OR IGNORE INTO referrals (invitee, inviter, at) VALUES (?, ?, ?)")
     .bind(invitee, inviter, Date.now()).run();
-  return !!(r.meta && r.meta.changes);
+  const done = !!(r.meta && r.meta.changes);
+  if (done && st === "rejected") {
+    const w = await env.DB.prepare("SELECT uid, gold FROM withdrawals WHERE id = ?").bind(id).first();
+    if (w) await env.DB.prepare("UPDATE gold SET bal = bal + ? WHERE uid = ?").bind(w.gold, w.uid).run();
+  }
+  return done;
 }
 export async function countReferrals(env, uid) {
   await init(env);
@@ -255,9 +261,11 @@ export async function createWithdrawal(env, uid, address, gold, stats) {
   const used = await env.DB.prepare("SELECT COALESCE(SUM(gold),0) AS g FROM withdrawals WHERE uid = ? AND status IN ('pending','paid')").bind(String(uid)).first();
   if ((used ? used.g : 0) + gold > cap) return { error: "over_cap", max: Math.max(0, cap - (used ? used.g : 0)) };
   const usd = gold / WD_GOLD_PER_USD;
+  const dd = await env.DB.prepare("UPDATE gold SET bal = bal - ? WHERE uid = ? AND bal >= ?").bind(gold, String(uid), gold).run();
+  if (!(dd.meta && dd.meta.changes)) return { error: "no_gold", bal: await goldBal(env, uid) };
   const r = await env.DB.prepare("INSERT INTO withdrawals (uid, address, gold, usd, status, stats, at) VALUES (?, ?, ?, ?, 'pending', ?, ?)")
     .bind(String(uid), address, gold, usd, JSON.stringify(stats || {}).slice(0, 1000), Date.now()).run();
-  return { ok: true, usd, id: r.meta && r.meta.last_row_id };
+  return { ok: true, usd, id: r.meta && r.meta.last_row_id, bal: await goldBal(env, uid) };
 }
 export async function listWithdrawals(env, uid) {
   await init(env);
@@ -272,7 +280,7 @@ export async function ackWithdrawals(env, uid, ids) {
 }
 export async function adminWithdrawals(env) {
   await init(env);
-  const r = await env.DB.prepare("SELECT w.id, w.uid, w.address, w.gold, w.usd, w.status, w.stats, w.at, w.decided, w.txid, u.first FROM withdrawals w LEFT JOIN users u ON u.uid = w.uid ORDER BY (w.status = 'pending') DESC, w.id DESC LIMIT 40").all();
+  const r = await env.DB.prepare("SELECT w.id, w.uid, w.address, w.gold, w.usd, w.status, w.stats, w.at, w.decided, w.txid, u.first, g.bal AS srv FROM withdrawals w LEFT JOIN users u ON u.uid = w.uid LEFT JOIN gold g ON g.uid = w.uid ORDER BY (w.status = 'pending') DESC, w.id DESC LIMIT 40").all();
   return r.results || [];
 }
 export async function decideWithdrawal(env, id, action, txid) {
@@ -282,4 +290,37 @@ export async function decideWithdrawal(env, id, action, txid) {
   const r = await env.DB.prepare("UPDATE withdrawals SET status = ?, decided = ?, txid = ? WHERE id = ? AND status = 'pending'")
     .bind(st, Date.now(), String(txid || "").slice(0, 120) || null, id).run();
   return !!(r.meta && r.meta.changes);
+}
+
+// --- Sunucu altın kasası: asıl bakiye burada, telefondaki rakam sadece kopya ---
+export const GOLD_PER_HOUR = 1667;   // saatte kazanılabilecek en çok altın (günde ~40.000)
+export const GOLD_MAX_CREDIT = 40000; // birikebilen en çok "kazanma hakkı"
+export const GOLD_BURST = 500;
+export async function goldSync(env, uid, coins, base) {
+  await init(env);
+  uid = String(uid);
+  const now = Date.now();
+  coins = Math.max(0, Math.floor(Number(coins) || 0));
+  const row = await env.DB.prepare("SELECT bal, credit, at FROM gold WHERE uid = ?").bind(uid).first();
+  if (!row) {
+    const first = await firstSeen(env, uid);
+    const cap = Math.floor((now - first) / 86400000) * WD_MAX_PER_DAY + GOLD_BURST;
+    const bal = Math.min(coins, cap);
+    await env.DB.prepare("INSERT OR IGNORE INTO gold (uid, bal, credit, at) VALUES (?, ?, ?, ?)").bind(uid, bal, GOLD_BURST, now).run();
+    const r = await env.DB.prepare("SELECT bal FROM gold WHERE uid = ?").bind(uid).first();
+    return r ? r.bal : bal;
+  }
+  let credit = Math.min(GOLD_MAX_CREDIT, row.credit + GOLD_PER_HOUR * Math.max(0, now - row.at) / 3600000);
+  let bal = row.bal;
+  if (base !== null && base !== undefined && Number.isFinite(Number(base))) {
+    const delta = coins - Math.floor(Number(base));
+    if (delta > 0) { const acc = Math.min(delta, Math.floor(credit)); credit -= acc; bal += acc; }
+    else bal = Math.max(0, bal + delta);
+  }
+  await env.DB.prepare("UPDATE gold SET bal = ?, credit = ?, at = ? WHERE uid = ?").bind(bal, credit, now, uid).run();
+  return bal;
+}
+export async function goldBal(env, uid) {
+  const r = await env.DB.prepare("SELECT bal FROM gold WHERE uid = ?").bind(String(uid)).first();
+  return r ? r.bal : 0;
 }
