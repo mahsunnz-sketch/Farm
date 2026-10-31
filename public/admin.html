@@ -45,6 +45,10 @@ button{background:var(--acc);color:#fff;border:0;margin-top:8px;cursor:pointer}
 <h2>Son 14 gün: gelen Stars</h2><div class="card"><div class="bar" id="payd"></div></div>
 <div class="grid" id="mid" style="margin-top:14px"></div>
 <h2>Çekim talepleri (USDT TRC20)</h2><div class="card wrap"><table id="wd"></table></div>
+<h2>Test aracı</h2><div class="card"><input id="tuid" type="text" inputmode="numeric" placeholder="Oyuncu ID (örn. 8626289466)" autocomplete="off">
+<button onclick="tst('')">Hesabı test için hazırla (100 gün, kilitler açık, 1M altın)</button>
+<button onclick="tst('&pool=1')">Hazırla + test geliri ekle (havuz dolsun)</button>
+<button onclick="tst('&undo=1')">Testi geri al (kilit/altın/sahte gelir silinir)</button><div class="sub" id="tmsg"></div></div>
 <h2>Son ödemeler</h2><div class="card wrap"><table id="rec"></table></div>
 <h2>Satın alınan kilitler</h2><div class="card wrap"><table id="unl"></table></div>
 <h2>En çok davet edenler</h2><div class="card wrap"><table id="top5"></table></div>
@@ -80,6 +84,8 @@ function load(){
     $('app').style.display='none';$('login').style.display='block';$('err').textContent=e===403?'Anahtar yanlış (yazdığın '+KEY.length+' karakter).':'Veri alınamadı.';try{localStorage.removeItem('adm')}catch(x){}
   });
 }
+function tst(q){var id=$('tuid').value.replace(/\D/g,'');if(!id){$('tmsg').textContent='Önce oyuncu ID yaz.';return}
+  fetch('/api/admintest?uid='+id+q,{headers:{'x-admin-key':KEY}}).then(function(r){return r.json().then(function(j){$('tmsg').textContent=r.ok?(j.note||'Geri alındı.'):'Hata: '+(j.error||r.status);load()})}).catch(function(){$('tmsg').textContent='Gönderilemedi.'})}
 function wdDo(id,a){var tx='';if(a==='paid'){tx=prompt('İşlem numarası (TXID) — boş bırakabilirsin:')||''}else if(!confirm('Reddedilirse oyuncunun altını iade edilir. Emin misin?'))return;
   if(a==='paid'&&!confirm('Parayı gönderdin mi? Bu işaret geri alınamaz.'))return;
   fetch('/api/adminwd',{method:'POST',headers:{'x-admin-key':KEY,'content-type':'application/json'},body:JSON.stringify({id:id,action:a,txid:tx})}).then(function(r){if(!r.ok)r.json().then(function(j){alert(j&&j.error==='conditions'?'Onaylanamaz: oyuncunun bütün hayvanların kilidi açık değil ya da talep 1.000.000 altının altında.':'İşlem yapılamadı (zaten sonuçlanmış olabilir).')}).catch(function(){});load()})}

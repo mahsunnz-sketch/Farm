@@ -7,7 +7,7 @@ import { json, safeEqual, init } from "../../src/lib/tg.js";
 export async function onRequest({ request, env }) {
   if (!env.SECRET || !env.DB) return new Response("Ayar eksik.", { status: 500 });
   const url = new URL(request.url);
-  if (!safeEqual(url.searchParams.get("key") || "", env.SECRET)) return new Response("Yetkisiz.", { status: 403 });
+  if (!safeEqual(request.headers.get("x-admin-key") || url.searchParams.get("key") || "", env.SECRET)) return new Response("Yetkisiz.", { status: 403 });
   const uid = String(url.searchParams.get("uid") || "").replace(/\D/g, "");
   if (!uid) return json({ error: "uid gerekli" }, 400);
   await init(env);
