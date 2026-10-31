@@ -957,6 +957,8 @@ var I18ROWS=[
 ['Henüz 30 gün dolmadı.','30 days have not passed yet.'],
 ['Zaten bekleyen bir talebin var.','You already have a pending request.'],
 ['Şu an en fazla # altın çekebilirsin.','You can withdraw at most # gold right now.'],
+['Ödeme havuzu şu an dolu. Şu an en fazla # USDT çekilebilir, daha sonra tekrar dene.','The payout pool is full right now. At most # USDT can be withdrawn at the moment, try again later.'],
+['En az 1.000.000 altın ve 20.000\'in katı olmalı.','At least 1,000,000 gold, in multiples of 20,000.'],
 ['Bütün hayvanların kilidi açık olmalı.','All animals must be unlocked.'],
 ['Çekim için bütün hayvanların kilidi açık olmalı ve en az # altının olmalı. Kilidi açılmamış:','Withdrawals need all animals unlocked and at least # gold. Still locked:'],
 ['Sunucudaki altının yetmiyor.','Your server gold is not enough.'],
@@ -2659,7 +2661,7 @@ function renderModal(){
       }else{
       var lk0=Object.keys(UNLOCK_DAY).filter(function(k){return dayNum()<UNLOCK_DAY[k]&&!SRV.unl[k.toUpperCase()]});
       var pend=(SRV.wd||[]).some(function(w){return w.status==='pending'});
-      h+='<div class="item"><div class="tx"><b>Çekilebilir: '+fmtN(Math.floor(G.coins/1000)*1000)+' altın</b><small>'+fmtN(2000)+' altın = 1 USDT · en az '+fmtN(1000000)+' altın</small></div></div>';
+      h+='<div class="item"><div class="tx"><b>Çekilebilir: '+fmtN(Math.floor(G.coins/20000)*20000)+' altın</b><small>'+fmtN(20000)+' altın = 1 USDT · en az '+fmtN(1000000)+' altın</small></div></div>';
       if(lk0.length){h+='<div class="note">Çekim için bütün hayvanların kilidi açık olmalı ve en az 1.000.000 altının olmalı. Kilidi açılmamış: '+lk0.map(function(k){return DEF[k]?DEF[k].name:k}).join(', ')+'</div>'}
       else if(pend){h+='<div class="note">Bekleyen bir talebin var. Sonuçlanınca yenisini açabilirsin.</div>'}
       else if(!(TGW&&TGW.initData)){h+='<div class="note">Çekim talebi yalnızca Telegram içinde yapılır.</div>'}
@@ -2839,12 +2841,12 @@ $('panel').addEventListener('click',function(ev){
   if(t.dataset.wd){
     var amt=parseInt(String($('wdAmt').value).replace(/\D/g,''),10)||0,ad=String($('wdAddr').value).trim();wdAmt=amt?String(amt):'';wdAddr=ad;
     if(!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(ad)){hMsg('Geçerli bir TRC20 adresi yaz (T ile başlar, 34 karakter).',false);return}
-    if(amt<1000000||amt%1000){hMsg('En az 1.000.000 altın ve 1.000\'in katı olmalı.',false);return}
+    if(amt<1000000||amt%20000){hMsg('En az 1.000.000 altın ve 20.000\'in katı olmalı.',false);return}
     if(G.coins<amt){hMsg('Yeterli altının yok.',false);return}
     t.disabled=true;
     goldSync().then(function(){return starPost('/api/withdraw',{initData:TGW.initData,address:ad,gold:amt,stats:{coins:Math.floor(G.coins),cash:Math.floor(G.cash||0),day:dayNum()}}).then(function(r){
       if(r.status===200&&r.j&&r.j.ok){G.coins=r.j.bal;G.gsb=r.j.bal;wdAmt='';save();starSync().then(function(){renderModal();hMsg('Talebin alındı: '+fmtN(r.j.usd)+' USDT',true)})}
-      else{t.disabled=false;var e=r.j&&r.j.error;hMsg(e==='locked'?'Henüz 30 gün dolmadı.':e==='pending_exists'?'Zaten bekleyen bir talebin var.':e==='bad_address'?'Adres geçersiz.':e==='bad_amount'?'Miktar geçersiz.':e==='animals_locked'?'Bütün hayvanların kilidi açık olmalı.':e==='no_gold'?(typeof r.j.bal==='number'&&(G.coins=r.j.bal,G.gsb=r.j.bal,save()),'Sunucudaki altının yetmiyor.'):e==='over_cap'?TF('Şu an en fazla # altın çekebilirsin.',Math.floor(r.j.max/1000)*1000):'Gönderilemedi, tekrar dene.',false)}
+      else{t.disabled=false;var e=r.j&&r.j.error;hMsg(e==='locked'?'Henüz 30 gün dolmadı.':e==='pending_exists'?'Zaten bekleyen bir talebin var.':e==='bad_address'?'Adres geçersiz.':e==='bad_amount'?'Miktar geçersiz.':e==='pool_empty'?TF('Ödeme havuzu şu an dolu. Şu an en fazla # USDT çekilebilir, daha sonra tekrar dene.',r.j.available||0):e==='animals_locked'?'Bütün hayvanların kilidi açık olmalı.':e==='no_gold'?(typeof r.j.bal==='number'&&(G.coins=r.j.bal,G.gsb=r.j.bal,save()),'Sunucudaki altının yetmiyor.'):e==='over_cap'?TF('Şu an en fazla # altın çekebilirsin.',Math.floor(r.j.max/20000)*20000):'Gönderilemedi, tekrar dene.',false)}
     })}).catch(function(){t.disabled=false;hMsg('Gönderilemedi, tekrar dene.',false)});return}
   if(t.dataset.snd){G.sound=!G.sound;save();renderModal();return}
   if(t.dataset.mus){G.music=!wantMusic();if(G.music)startMusic();else stopMusic();save();renderModal();return}

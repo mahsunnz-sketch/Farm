@@ -243,7 +243,9 @@ export async function adminStats(env) {
   };
 }
 // --- Kripto çekim talepleri (USDT TRC20, elle ödenir) ---
-export const WD_GOLD_PER_USD = 2000;   // 2000 altın = 1 USDT (1.000.000 altın = 500 USDT)
+export const WD_GOLD_PER_USD = 20000;  // 20.000 altın = 1 USDT (1.000.000 altın = 50 USDT)
+export const STAR_USD = 0.013;         // 1 Star geliştiriciye ~0,013 $ bırakır
+export const POOL_PCT = 0.30;          // toplam ödeme, net gelirin en çok %30'u
 export const WD_MIN_GOLD = 1000000;    // en az 1 milyon altın
 export const WD_DAYS = 30;
 const UNLOCK_DAY = { c: 1, d: 2, s: 3, p: 3, w: 3, z: 45, e: 60, o: 75, t: 90 };
@@ -271,6 +273,8 @@ export async function createWithdrawal(env, uid, address, gold, stats) {
   const used = await env.DB.prepare("SELECT COALESCE(SUM(gold),0) AS g FROM withdrawals WHERE uid = ? AND status IN ('pending','paid')").bind(String(uid)).first();
   if ((used ? used.g : 0) + gold > cap) return { error: "over_cap", max: Math.max(0, cap - (used ? used.g : 0)) };
   const usd = gold / WD_GOLD_PER_USD;
+  const pool = await poolStatus(env);
+  if (usd > pool.available) return { error: "pool_empty", available: Math.floor(pool.available) };
   const dd = await env.DB.prepare("UPDATE gold SET bal = bal - ? WHERE uid = ? AND bal >= ?").bind(gold, String(uid), gold).run();
   if (!(dd.meta && dd.meta.changes)) return { error: "no_gold", bal: await goldBal(env, uid) };
   const r = await env.DB.prepare("INSERT INTO withdrawals (uid, address, gold, usd, status, stats, at) VALUES (?, ?, ?, ?, 'pending', ?, ?)")
@@ -340,4 +344,15 @@ export async function goldSync(env, uid, coins, base) {
 export async function goldBal(env, uid) {
   const r = await env.DB.prepare("SELECT bal FROM gold WHERE uid = ?").bind(String(uid)).first();
   return r ? r.bal : 0;
+}
+
+// --- Ödeme havuzu: ödemeler gelirin belli bir yüzdesiyle sınırlı ---
+export async function poolStatus(env) {
+  await init(env);
+  const p = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) s FROM payments").first();
+  const w = await env.DB.prepare("SELECT COALESCE(SUM(stars),0) s FROM wallet").first();
+  const c = await env.DB.prepare("SELECT COALESCE(SUM(usd),0) u FROM withdrawals WHERE status IN ('pending','paid')").first();
+  const stars = Math.max(0, (p ? p.s : 0) - (w ? w.s : 0));   // harcanmış (kazanılmış) Stars
+  const net = stars * STAR_USD, pool = net * POOL_PCT, committed = c ? c.u : 0;
+  return { stars, net, pool, committed, available: Math.max(0, pool - committed) };
 }
