@@ -243,15 +243,25 @@ export async function adminStats(env) {
   };
 }
 // --- Kripto çekim talepleri (USDT TRC20, elle ödenir) ---
-export const WD_GOLD_PER_USD = 1000;   // 1000 altın = 1 USDT
+export const WD_GOLD_PER_USD = 2000;   // 2000 altın = 1 USDT (1.000.000 altın = 500 USDT)
 export const WD_MIN_GOLD = 1000000;    // en az 1 milyon altın
-export const WD_DAYS = 30;             // oynamaya başladıktan 30 gün sonra
+export const WD_DAYS = 30;
+const UNLOCK_DAY = { c: 1, d: 2, s: 3, p: 3, w: 3, z: 45, e: 60, o: 75, t: 90 };
+// Bütün hayvanların kilidi açık mı? (gün dolduysa ya da Stars ile erken açıldıysa)
+export async function allAnimalsUnlocked(env, uid, first) {
+  const day = Math.floor((Date.now() - first) / 86400000) + 1;
+  const unl = await listUnlocks(env, uid);
+  const missing = Object.keys(UNLOCK_DAY).filter((k) => day < UNLOCK_DAY[k] && !unl[k.toUpperCase()]);
+  return missing;
+}             // oynamaya başladıktan 30 gün sonra
 export const WD_MAX_PER_DAY = 40000;  // bir oyuncunun gün başına kazanabileceği en çok altın (sunucu sınırı)
 export const TRC20 = /^T[1-9A-HJ-NP-Za-km-z]{33}$/;
 export async function createWithdrawal(env, uid, address, gold, stats) {
   await init(env);
   const first = await firstSeen(env, uid);
   if (Date.now() - first < WD_DAYS * 86400000) return { error: "locked", opensAt: first + WD_DAYS * 86400000 };
+  const missing = await allAnimalsUnlocked(env, uid, first);
+  if (missing.length) return { error: "animals_locked", missing };
   if (!TRC20.test(address || "")) return { error: "bad_address" };
   if (!Number.isInteger(gold) || gold < WD_MIN_GOLD || gold % WD_GOLD_PER_USD !== 0) return { error: "bad_amount" };
   const open = await env.DB.prepare("SELECT 1 AS x FROM withdrawals WHERE uid = ? AND status = 'pending'").bind(String(uid)).first();
@@ -287,6 +297,13 @@ export async function decideWithdrawal(env, id, action, txid) {
   await init(env);
   const st = action === "paid" ? "paid" : action === "rejected" ? "rejected" : null;
   if (!st || !Number.isInteger(id)) return false;
+  if (st === "paid") {
+    // Onay şartı: talep en az 1.000.000 altın ve bütün hayvanların kilidi açık olmalı
+    const w0 = await env.DB.prepare("SELECT uid, gold, status FROM withdrawals WHERE id = ?").bind(id).first();
+    if (!w0 || w0.status !== "pending" || w0.gold < WD_MIN_GOLD) return "conditions";
+    const f0 = await firstSeen(env, w0.uid);
+    if ((await allAnimalsUnlocked(env, w0.uid, f0)).length) return "conditions";
+  }
   const r = await env.DB.prepare("UPDATE withdrawals SET status = ?, decided = ?, txid = ? WHERE id = ? AND status = 'pending'")
     .bind(st, Date.now(), String(txid || "").slice(0, 120) || null, id).run();
   return !!(r.meta && r.meta.changes);

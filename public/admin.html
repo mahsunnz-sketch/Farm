@@ -82,7 +82,7 @@ function load(){
 }
 function wdDo(id,a){var tx='';if(a==='paid'){tx=prompt('İşlem numarası (TXID) — boş bırakabilirsin:')||''}else if(!confirm('Reddedilirse oyuncunun altını iade edilir. Emin misin?'))return;
   if(a==='paid'&&!confirm('Parayı gönderdin mi? Bu işaret geri alınamaz.'))return;
-  fetch('/api/adminwd',{method:'POST',headers:{'x-admin-key':KEY,'content-type':'application/json'},body:JSON.stringify({id:id,action:a,txid:tx})}).then(function(r){if(!r.ok)alert('İşlem yapılamadı (zaten sonuçlanmış olabilir).');load()})}
+  fetch('/api/adminwd',{method:'POST',headers:{'x-admin-key':KEY,'content-type':'application/json'},body:JSON.stringify({id:id,action:a,txid:tx})}).then(function(r){if(!r.ok)r.json().then(function(j){alert(j&&j.error==='conditions'?'Onaylanamaz: oyuncunun bütün hayvanların kilidi açık değil ya da talep 1.000.000 altının altında.':'İşlem yapılamadı (zaten sonuçlanmış olabilir).')}).catch(function(){});load()})}
 $('go').onclick=function(){KEY=$('key').value.trim();load()};
 try{KEY=localStorage.getItem('adm')||''}catch(e){}
 if(location.hash.length>1){try{KEY=decodeURIComponent(location.hash.slice(1)).trim()}catch(e){KEY=location.hash.slice(1)}try{history.replaceState(null,'',location.pathname)}catch(e){}}
