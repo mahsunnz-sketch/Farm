@@ -5,6 +5,7 @@ import * as status from "../functions/api/status.js";
 import * as telegram from "../functions/api/telegram.js";
 import * as setup from "../functions/api/setup.js";
 import * as admin from "../functions/api/admin.js";
+import * as admintest from "../functions/api/admintest.js";
 import * as gold from "../functions/api/gold.js";
 import * as withdraw from "../functions/api/withdraw.js";
 import * as adminwd from "../functions/api/adminwd.js";
@@ -16,6 +17,7 @@ const routes = {
   "/api/setup": setup,
   "/api/admin": admin,
   "/api/gold": gold,
+  "/api/admintest": admintest,
   "/api/withdraw": withdraw,
   "/api/adminwd": adminwd,
 };

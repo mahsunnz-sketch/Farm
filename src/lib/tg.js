@@ -73,7 +73,7 @@ export async function tgApi(env, method, body) {
 
 // --- Veritabanı (D1) ---
 let ready = false;
-async function init(env) {
+export async function init(env) {
   if (ready) return;
   await env.DB.batch([
     env.DB.prepare("CREATE TABLE IF NOT EXISTS farmers (charge TEXT PRIMARY KEY, uid TEXT NOT NULL, at INTEGER NOT NULL)"),
