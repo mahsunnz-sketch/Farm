@@ -253,6 +253,25 @@ function oakSprite(kind,seed){
   });
   s.ax=cx;s.ay=base;return s;
 }
+function willowSprite(seed){
+  var r=rngf(seed),R=29,w=104,h=104,cx=w/2,cy=R+4,base=h-4;
+  var pal={line:'rgba(86,120,24,.5)',dark:'#8dbb2c',mid:'#b4d84a',hi:'#e2f58a',leafHi:'#f3ffb4',leafLo:'#79a622'};
+  var can=canopyLayer(w,h,cx,cy,R,pal,r,9);
+  var s=mk(w,h,function(c){
+    c.fillStyle='rgba(20,60,20,.3)';c.beginPath();c.ellipse(cx+5,base,R*.9,6.5,0,0,TAU);c.fill();
+    trunk(c,cx,cy+R*.2,base,6.6);
+    c.drawImage(can.cv,0,0,w,h);
+    c.lineCap='round';c.lineJoin='round';
+    var cols=['#9cc936','#c3e052','#7fae26','#b2d643'],i;
+    for(i=0;i<34;i++){
+      var a=Math.PI*(.04+.92*r()),ex=cx+Math.cos(a)*R*(.55+r()*.5),ey=cy+Math.sin(a)*R*.5+R*.25;
+      var len=26+r()*30,sw=(r()-.5)*5;
+      c.strokeStyle='rgba(86,120,24,.55)';c.lineWidth=2.8;c.beginPath();c.moveTo(ex,ey);c.quadraticCurveTo(ex+sw*1.5+(ex>cx?4:-4),ey+len*.55,ex+sw,Math.min(base-6,ey+len));c.stroke();
+      c.strokeStyle=cols[i%4];c.lineWidth=1.7;c.beginPath();c.moveTo(ex,ey);c.quadraticCurveTo(ex+sw*1.5+(ex>cx?4:-4),ey+len*.55,ex+sw,Math.min(base-6,ey+len));c.stroke();
+    }
+  });
+  s.ax=cx;s.ay=base;return s;
+}
 function tier(c,cx,yt,yb,hw,pal){
   c.beginPath();c.moveTo(cx,yt);c.quadraticCurveTo(cx-hw*.35,(yt+yb)/2,cx-hw,yb-4);
   for(var i=0;i<3;i++){var x0=cx-hw+2*hw*i/3,x1=cx-hw+2*hw*(i+1)/3;c.quadraticCurveTo((x0+x1)/2,yb+7,x1,yb-4)}
@@ -439,11 +458,12 @@ function truckBody(){
 /* ---------- varlıklar ---------- */
 var A={};
 function buildAssets(){
-  A.oak={plain:[],apple:[],blossom:[]};
+  A.oak={plain:[],apple:[],blossom:[],willow:[]};
   var i;
   for(i=0;i<4;i++)A.oak.plain.push(oakSprite('plain',101+i*17));
   for(i=0;i<3;i++)A.oak.apple.push(oakSprite('apple',201+i*13));
   for(i=0;i<3;i++)A.oak.blossom.push(oakSprite('blossom',301+i*11));
+  for(i=0;i<3;i++)A.oak.willow.push(willowSprite(401+i*19));
   A.pine=[pineSprite(0),pineSprite(1),pineSprite(2),pineSprite(3)];
   A.rock=[rockSprite(5),rockSprite(9),rockSprite(14)];
   A.bush=[bushSprite('flower',21),bushSprite('rose',23),bushSprite('berry',27),bushSprite('flower',29)];
@@ -500,7 +520,7 @@ function genWorld(){
     for(var x=-14+(row%2)*15;x<W+22;x+=30){
       if(r()<.08)continue;
       var jx=x+(r()-.5)*16,jy=y+(r()-.5)*12,size=.82+r()*.42,tp=r(),kind;
-      if(tp<.27)kind='pine';else if(tp<.6)kind='plain';else if(tp<.76)kind='apple';else if(tp<.84)kind='blossom';else kind='plain';
+      if(tp<.27)kind='pine';else if(tp<.6)kind='plain';else if(tp<.76)kind='apple';else if(tp<.84)kind='blossom';else if(tp<.93)kind='willow';else kind='plain';
       var ccx=jx,ccy=jy-(kind==='pine'?40:52)*size,cr=(kind==='pine'?24:28)*size;
       if(hitK(ccx,ccy,cr))continue;
       var vs=kind==='pine'?4:(kind==='plain'?4:3),t={x:jx,y:jy,k:size,kind:kind,v:Math.floor(r()*vs),ph:r()*TAU};
